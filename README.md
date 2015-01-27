@@ -21,3 +21,9 @@ Here's a short description of what each component is:
 * Splunk version 6.2 or higher
 * IBM's Tivoli Storage Manager version 6.0 or higher
 * Splunk Gantt Chart visualization (https://apps.splunk.com/app/1741/)
+* Splunk DB Connect (https://apps.splunk.com/app/958/)
+* python-requests
+* python-ldap
+* python-argparse
+* suds-jurko
+* pushybullet (for [Pushbullet](https://www.pushbullet.com/) integration)
