@@ -1,0 +1,36 @@
+<form>
+    <label>TSMDB Index</label>
+    <description></description>
+    <searchTemplate>
+        | inputlookup tsmdb | search frequency!=NEVER | stats list(internal_name) AS internal_name list(version) AS version by name,columns,frequency | eval _raw=name+":"+columns | makemv columns delim=";" | search ( $filterString$ ) | table name frequency columns version internal_name
+    </searchTemplate>
+    <fieldset autoRun="True">
+        <input type="text" token="filterString" searchWhenChanged="True">
+            <label>Filter</label>
+            <default/>
+        </input>
+    </fieldset>
+    <row>
+        <html>
+            <p>This is the list of all the 'tables' available in the TSMDB index.</p>
+            <p>In order to read them, you can use the following searches:
+                <ul>
+                    <li><b>`tsmdb("&lt;name&gt;")`</b>: search for all data from that table</li>
+                    <li><b>`tsmdb("&lt;name&gt;")` tsmserver="&lt;tsmserver&gt;"</b>: search for all data from that table for one server only</li>
+                    <li><b>`lastdb("&lt;name&gt;")`</b>: search for only the last data from that table</li>
+                    <li><b>`lastdb("&lt;name&gt;", "&lt;tsmserver&gt;")`</b>: search for only the last data from that table for one server only</li>
+                </ul>
+            </p>
+        </html>
+    </row>
+    <row>
+        <panel>
+            <title>Tables</title>
+            <table>
+                <drilldown>
+                    <link><![CDATA[search?earliest=-24h&latest=now&q=`lastdb("$row.name$")`]]></link>
+                </drilldown>
+            </table>
+        </panel>
+    </row>
+</form>

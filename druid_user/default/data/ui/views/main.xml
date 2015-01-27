@@ -1,0 +1,73 @@
+<dashboard hideEdit="true">
+  <label>TSM User Portal</label>
+  <search id="schedules">
+    <query>| inputlookup nodeinfo
+      | where isnull(DEL_TIME)
+      | `filter_contacts`
+      | join type=outer max=0 tsmserver NODE_NAME [| `schedule_info`]
+      | where isnotnull(SCHEDULE_NAME)
+      | fillnull value="Unknown" status
+      | fillnull value="" USER_GROUP
+    </query>
+  </search>
+  <row>
+    <panel>
+      <title>Node Schedule Status</title>
+      <chart>
+        <search base="schedules">
+          <query>stats count by status</query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.chart.showPercent">false</option>
+        <option name="link.visible">false</option>
+        <drilldown>
+          <link>Ordenalfabetix?form.filterString="Last%20Run"%3D"$click.value$"</link>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <title>Schedule Status split by groups</title>
+      <chart>
+        <search base="schedules">
+          <query>chart count over USER_GROUP by status</query>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked100</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.axisTitleX.text">Groups</option>
+        <option name="charting.axisTitleY.text">Percentage</option>
+        <option name="link.visible">false</option>
+        <drilldown>
+          <link>Ordenalfabetix?form.filterString="Group"%3D"$click.value$"%20AND%20"Last Run"%3D"$click.name2$"</link>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel ref="service_status" app="druid_utils"></panel>
+  </row>
+  <row>
+    <panel>
+      <title>Welcome to the TSM User Portal</title>
+      <html>
+        <p>This interface should provide you with all of the information you may need to properly manage your TSM backups. You can:
+          <ul>
+            <li>See a <a href="Ordenalfabetix">list of all your nodes</a> and their backup status</li>
+            <li>See each node's <a href="node_data">data consumption</a>, <a href="node_logs">log files</a>, etc.</li>
+            <li>Categorize your nodes <a href="node_config">into groups</a> in order to see agregated statistics</li>
+            <li>See your <a href="total_data">total data consumption</a> and your <a href="daily_traffic">daily traffic</a></li>
+          </ul>
+        </p>
+        <p>Please let us know if you encounter any <a href="https://you.service-now.com/service-portal/report-ticket.do?name=incident&amp;se=Backup-Restore-Service">problems</a> or if you have any <a href="https://you.service-now.com/service-portal/report-ticket.do?name=request&amp;se=Backup-Restore-Service">suggestions for improvements</a>.</p>
+      </html>
+    </panel>
+    <panel ref="all_servicenow_actions" app="druid_utils"></panel>
+  </row>
+</dashboard>

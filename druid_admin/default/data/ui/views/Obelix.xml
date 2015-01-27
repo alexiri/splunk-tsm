@@ -1,0 +1,307 @@
+<form stylesheet="obelix.css">
+ <label>Server Status</label>
+ <description>Obelix, pulling the service's weight</description>
+ <fieldset autoRun="true" submitButton="false">
+  <input type="dropdown" token="tsmserver" searchWhenChanged="true">
+   <label>Select a server:</label>
+   <populatingSearch fieldForValue="TSMSERVER" fieldForLabel="TSMSERVER">
+    <![CDATA[| inputlookup serverinfo]]>
+   </populatingSearch>
+  </input>
+ </fieldset>
+ <searchTemplate>
+     `lastdb("stgpools", "$tsmserver$")` | fields *
+ </searchTemplate>
+ <earliestTime>-24h</earliestTime>
+ <row grouping="5,9,8">
+
+  <chart>
+   <title>DB - Filesystem Usage</title>
+   <searchString>
+     `lastdb("dbspace", "$tsmserver$")`
+     | eval perc_used_db_space = round(USED_FS_SIZE_MB*100/(USED_FS_SIZE_MB+FREE_SPACE_MB),1)
+     | table perc_used_db_space
+   </searchString>
+   <earliestTime>-24h</earliestTime>
+   <option name="charting.chart.rangeValues">[0,70,90,100]</option>
+   <option name="charting.chart">fillerGauge</option>
+   <option name="charting.gaugeColors">[0x84e900,0xffe800,0xbf3030]</option>
+   <option name="charting.chart.usePercentageValue">true</option>
+  </chart>
+
+  <single>
+   <title>Important Server Information</title>
+   <searchString>
+     `lastdb("db", "$tsmserver$")`
+     | eval days_since_last_backup = round((_time - strptime(LAST_BACKUP_DATE, "%Y-%m-%d %H:%M:%S"))/(3600*24),1)
+     | table days_since_last_backup
+     | rangemap field=days_since_last_backup low=0-1 elevated=2-3 default=severe
+   </searchString>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Time since last DB Backup:</option>
+   <option name="afterLabel">day(s)</option>
+  </single>
+
+  <single>
+   <searchString>
+     index=tsmlogs tsmcode=ANR8337I tsmserver=$tsmserver$ earliest=-24h
+     | stats count
+     | rangemap field=count severe=0-0 elevated=1-9 default=low
+   </searchString>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Mounts in the last 24h:</option>
+  </single>
+
+  <single>
+   <searchString>
+     `lastdb("nodes", "$tsmserver$")`
+     | stats count(eval(LOCKED="NO")) as UNLOCKED, count as TOTAL
+     | eval perc=(UNLOCKED/TOTAL)*100
+     | rangemap field=perc low=100-100 elevated=90-99 default=severe
+     | table perc, range
+   </searchString>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Unlocked nodes:</option>
+   <option name="afterLabel">%</option>
+  </single>
+
+  <chart>
+   <title>Errors in the last 24 hours</title>
+   <searchString>
+     index=tsmlogs (tsmcode=ANR*E OR tsmcode=ANR*W) tsmserver="$tsmserver$"
+     | lookup tsmcode-alerts tsmcode as tsmcode OUTPUT alert as alert
+     | eval alert=if(isnull(alert), "other", alert)
+     | search alert!=ignore
+     | timechart count by alert
+   </searchString>
+   <earliestTime>-24h</earliestTime>
+   <option name="charting.chart.stackMode">stacked</option>
+  </chart>
+
+  <chart>
+   <title>BackupPool - Utilization</title>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPPOOL"
+     | table PCT_UTILIZED
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="charting.chart.rangeValues">[0,70,90,100]</option>
+   <option name="charting.chart">fillerGauge</option>
+   <option name="charting.gaugeColors">[0x84e900,0xffe800,0xbf3030]</option>
+   <option name="charting.chart.usePercentageValue">true</option>
+  </chart>
+
+  <single>
+   <title>BackupPool - Access Overview</title>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPPOOL"
+     | replace READWRITE with 1 in ACCESS
+     | rangemap field=ACCESS low=1-1 default=severe
+     | replace 1 with READWRITE in ACCESS
+     | table ACCESS, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Pool Access:</option>
+  </single>
+
+  <single>
+   <title>BackupPool - Migration Policy Overview</title>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPPOOL"
+     | replace BACKUPCART with 1 in NEXTSTGPOOL
+     | rangemap field=NEXTSTGPOOL low=1-1 default=severe
+     | replace 1 with BACKUPCART in NEXTSTGPOOL
+     | table NEXTSTGPOOL, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Next Storage Pool:</option>
+  </single>
+
+  <single>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPPOOL"
+     | rangemap field=HIGHMIG low=0-80 elevated=81-90 default=severe
+     | table HIGHMIG, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">High Migration Threshold:</option>
+   <option name="afterLabel">%</option>
+  </single>
+
+  <single>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPPOOL"
+     | rangemap field=LOWMIG low=0-0 elevated=1-70 default=severe
+     | table LOWMIG, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Low Migration Threshold:</option>
+   <option name="afterLabel">%</option>
+  </single>
+
+  <single>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPPOOL"
+     | rangemap field=MIGDELAY low=0-0 elevated=1-2 default=severe
+     | table MIGDELAY, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Migration Delay:</option>
+   <option name="afterLabel">days(s)</option>
+  </single>
+
+  <single>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPPOOL"
+     | rangemap field=MIGPROCESS low=1-4 default=severe
+     | table MIGPROCESS, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Number of migration processes:</option>
+  </single>
+
+  <single>
+   <title>BackupPool - Volume Status</title>
+   <searchString>
+     `lastdb("volumes", "$tsmserver$")`
+     | search STGPOOL_NAME="BACKUPPOOL"
+     | stats count as TOTAL, count(eval(ACCESS="READWRITE")) as RW
+     | eval perc=RW*100/TOTAL | table perc | rangemap field=perc low=100-100 default=severe
+   </searchString>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Percentage of R/W volumes:</option>
+   <option name="afterLabel">%</option>
+  </single>
+
+  <single>
+   <searchString>
+     `lastdb("volumes", "$tsmserver$")`
+     | search STGPOOL_NAME="BACKUPPOOL"
+     | stats count as TOTAL, count(eval(STATUS="ONLINE")) as OL, count(eval(ACCESS="READWRITE")) as RW
+     | eval OL=if(DEVCLASS_NAME="DISK", OL, RW)
+     | eval perc=OL*100/TOTAL
+     | fields perc
+     | rangemap field=perc low=100-100 default=severe
+   </searchString>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Percentage of On-line volumes:</option>
+   <option name="afterLabel">%</option>
+  </single>
+
+  <chart>
+   <title>BackupCart - Scratch Tape Usage</title>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPCART"
+     | eval perc=round(NUMSCRATCHUSED/MAXSCRATCH,2)
+     | table perc
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="charting.chart.rangeValues">[0,70,90,100]</option>
+   <option name="charting.chart">fillerGauge</option>
+   <option name="charting.gaugeColors">[0x84e900,0xffe800,0xbf3030]</option>
+   <option name="charting.chart.usePercentageValue">true</option>
+   <option name="charting.scaleX">1</option>
+  </chart>
+
+  <single>
+   <title>BackupCart - Overview</title>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPCART"
+     | replace READWRITE with 1 in ACCESS
+     | rangemap field=ACCESS low=1-1 default=severe
+     | replace 1 with READWRITE in ACCESS
+     | table ACCESS, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Pool Access:</option>
+  </single>
+
+  <single>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPCART"
+     | rangemap field=MAXSCRATCH low=1000-99999 elevated=100-999 default=severe
+     | table MAXSCRATCH, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Max Number of Scratch Tapes Allowed:</option>
+  </single>
+
+  <single>
+   <title>BackupCart - Reuse and Reclaim</title>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPCART"
+     | rangemap field=REUSEDELAY low=0-0 elevated=1-5 default=severe
+     | table REUSEDELAY, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Reuse Delay:</option>
+   <option name="afterLabel">day(s)</option>
+  </single>
+
+  <single>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPCART"
+     | rangemap field=RECLAIM low=95-100 elevated=90-94 default=severe
+     | table RECLAIM, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Reclaim Threshold:</option>
+   <option name="afterLabel">%</option>
+  </single>
+
+  <single>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPCART"
+     | rangemap field=RECLAIMPROCESS low=1-4 default=severe
+     | table RECLAIMPROCESS, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Number of Reclaim Processes:</option>
+  </single>
+
+  <single>
+   <title>BackupCart - Tape Errors</title>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPCART"
+     | where WRITE_ERRORS&gt;0 or READ_ERRORS&gt;0
+     | stats count as total
+     | rangemap field=total low=0-0 elevated=1-1 default=severe
+     | table total, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Number of Tapes with Errors:</option>
+  </single>
+
+  <single>
+   <searchPostProcess>
+     where STGPOOL_NAME="BACKUPCART"
+     | stats count as total, count(eval(ACCESS="READWRITE")) as rw
+     | eval perc=rw*100/total
+     | rangemap field=perc elevated=95-99 low=100-100 default=severe
+     | table perc, range
+   </searchPostProcess>
+   <earliestTime>-24h</earliestTime>
+   <option name="classField">range</option>
+   <option name="beforeLabel">Percentage of R/W tapes in the pool:</option>
+   <option name="afterLabel">%</option>
+  </single>
+
+ </row>
+</form>

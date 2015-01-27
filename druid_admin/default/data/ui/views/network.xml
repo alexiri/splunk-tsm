@@ -1,0 +1,88 @@
+<form>
+  <label>Network Traffic</label>
+  <searchTemplate>
+    <![CDATA[
+	index=lemon sourcetype=network $tsmserver$
+	| eval ReadMBps=NumKBReadAvg/1024
+	| eval WriteMBps=NumKBWriteAvg/1024
+  ]]>
+  </searchTemplate>
+  <earliestTime>$time.earliest$</earliestTime>
+  <latestTime>$time.latest$</latestTime>
+  <fieldset submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label/>
+      <default>
+        <earliestTime>-72h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="multiselect" token="tsmserver" searchWhenChanged="true">
+      <label>Server</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="TSMSERVER" fieldForValue="TSMSERVER">| inputlookup serverinfo | sort TSMSERVER</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>tsmserver="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Inbound traffic</title>
+      <chart>
+        <searchPostProcess>timechart limit=50 minspan=5m bins=300 avg(ReadMBps) AS MBps by tsmserver</searchPostProcess>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">MB/s</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Outbound traffic</title>
+      <chart>
+        <searchPostProcess>timechart limit=50 minspan=5m bins=300 avg(WriteMBps) AS MBps by tsmserver</searchPostProcess>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">MB/s</option>
+      </chart>
+    </panel>
+  </row>
+</form>

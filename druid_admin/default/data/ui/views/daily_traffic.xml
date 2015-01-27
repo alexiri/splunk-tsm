@@ -1,0 +1,95 @@
+<form>
+  <label>Daily Traffic</label>
+  <searchTemplate>
+    <![CDATA[
+    index=tsm-accnt
+    | lookup nodeinfo tsmserver NODE_NAME AS node OUTPUTNEW CONTACT
+    | `contact_deptgroup(CONTACT)`
+    | search $department$ $group$ $contact$
+    | bin _time span=1d
+    | stats sum(total_kb) AS total by _time
+    | eval total=total / case("$unit$"=="Megabytes", 1024, "$unit$"=="Gigabytes", 1024*1024, "$unit$"=="Terabytes", 1024*1024*1024, "$unit$"=="Petabytes", 1024*1024*1024*1024)
+  ]]>
+  </searchTemplate>
+  <earliestTime>$time.earliest$</earliestTime>
+  <latestTime>$time.latest$</latestTime>
+  <fieldset submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label/>
+      <default>
+        <earliestTime>-30d@d</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="dropdown" token="unit" searchWhenChanged="true">
+      <label>Units</label>
+      <choice value="Megabytes">Megabytes</choice>
+      <choice value="Gigabytes">Gigabytes</choice>
+      <choice value="Terabytes">Terabytes</choice>
+      <choice value="Petabytes">Petabytes</choice>
+      <default>Terabytes</default>
+    </input>
+    <input type="multiselect" token="department" searchWhenChanged="true">
+      <label>Department</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="contact_dept" fieldForValue="contact_dept">| inputlookup contactinfo | dedup contact_dept | sort contact_dept</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>contact_dept="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="multiselect" token="group" searchWhenChanged="true">
+      <label>Group</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch fieldForLabel="contact_group" fieldForValue="contact_group">| inputlookup contactinfo | search $department$ | dedup contact_group | sort contact_group</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>contact_group="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="multiselect" token="contact" searchWhenChanged="true">
+      <label>Contact</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch fieldForLabel="contact" fieldForValue="contact">| inputlookup contactinfo | search $department$ $group$ | dedup contact | sort contact</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>CONTACT="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Daily Traffic</title>
+      <chart>
+        <searchPostProcess>timechart span=1d avg(total) AS Total | eventstats avg(Total) as Average</searchPostProcess>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.overlayFields">Average</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleY.text">$unit$</option>
+        <option name="charting.axisTitleX.text">Time</option>
+      </chart>
+    </panel>
+  </row>
+</form>

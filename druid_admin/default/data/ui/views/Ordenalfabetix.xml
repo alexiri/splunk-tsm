@@ -1,0 +1,78 @@
+<form>
+  <label>Node List</label>
+  <description>Ordenalfabetix, only the freshest nodes registered in TSM</description>
+  <searchTemplate>| inputlookup nodeinfo
+      | where isnull(DEL_TIME)
+      | join max=0 type=outer tsmserver NODE_NAME [
+          | inputlookup scheduleinfo
+          | join type=outer tsmserver NODE_NAME SCHEDULE_NAME [| `schedule_info`]
+      ]
+      | stats list(SCHEDULE_NAME) AS SCHEDULE_NAME list(status) AS status list(status_time) AS status_time list(last_completed) AS last_completed first(PLATFORM_NAME) AS PLATFORM_NAME first(CONTACT) AS CONTACT first(DOMAIN_NAME) AS DOMAIN_NAME by tsmserver NODE_NAME
+      | `contact_deptgroup(CONTACT)`
+      | eval status_time=strftime(status_time, "%F %T")
+      | eval last_completed=strftime(last_completed, "%F %T")
+      | eval _raw=tsmserver+":"+NODE_NAME+":"+coalesce(CONTACT,"")+":"+coalesce(PLATFORM_NAME,"")+":"+coalesce(DOMAIN_NAME,"")+":"+coalesce(contact_dept,"")+":"+coalesce(contact_group,"")+":"+coalesce(mvjoin(SCHEDULE_NAME,","),"")+":"+coalesce(mvjoin(status,","),"")
+      | rename tsmserver AS "TSM Server" NODE_NAME AS "Node Name" PLATFORM_NAME AS Platform CONTACT AS Contact DOMAIN_NAME AS Domain contact_group AS Group contact_dept AS Department SCHEDULE_NAME AS Schedule status AS "Last Run" status_time AS "Last Run Time" last_completed AS "Last Successful Run"
+      | search ( $filterString$ )
+      | table "TSM Server" "Node Name" Domain Platform Contact Department Group Schedule "Last Run" "Last Run Time" "Last Successful Run" | sort "Node Name"</searchTemplate>
+  <fieldset autoRun="True">
+    <input type="text" token="filterString" searchWhenChanged="True">
+      <label>Filter</label>
+      <default/>
+    </input>
+  </fieldset>
+  <row grouping="3">
+    <table>
+      <option name="count">20</option>
+      <option name="rowNumbers">true</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link field="Node Name">node_data?form.tsmserver=$row.TSM Server$&amp;form.NODE_NAME=$row.Node Name$</link>
+        <link>Ordenalfabetix?form.filterString="$click.name2$"%3D"$click.value2$"</link>
+      </drilldown>
+    </table>
+    <single>
+      <searchPostProcess>stats count AS postcount</searchPostProcess>
+      <option name="beforeLabel">Showing</option>
+      <option name="field">postcount</option>
+      <option name="afterLabel">node(s)</option>
+    </single>
+    <single>
+      <searchString>| inputlookup nodeinfo
+      | where isnull(DEL_TIME) | stats count AS total</searchString>
+      <option name="beforeLabel">out of</option>
+      <option name="field">total</option>
+    </single>
+  </row>
+  <row>
+    <html>
+      <table border="0">
+        <tr>
+          <td width="50%" valign="top">
+            <h2>Filter options</h2>
+            <p>You can use the text field below to search for particular nodes. Arguments to the search command can be keywords or key/value expressions:
+            <ul>
+                <li>Terms: <b>linux</b></li>
+                <li>Quoted phrases: <b>"TDP MSExchg"</b></li>
+                <li>Boolean operators: <b>CVI NOT (CVILONG OR CVIWEEK) AND ENGINEERING</b> (boolean operators are case sensitive)</li>
+                <li>Wildcards: <b>lxfs*</b></li>
+                <li>Field values: <b>"TSM Server"=tsm613</b>, <b>Domain!=ORACLE</b>, or <b>"Last Successful Run"&lt;"2014-01-01"</b> (Field names are case sensitive, values are not)</li>
+                <li>Searches for <i>Schedule</i>, <i>Last Run</i>, <i>Last Run Time</i> or <i>Last Successful Run</i> must be done using field names: <b>"Last Run"=Missed</b></li>
+            </ul>
+            </p>
+          </td>
+          <td width="20%"/>
+          <td width="30%" valign="top">
+            <h2>Common filters</h2>
+            <div>
+              <a href="Ordenalfabetix?form.filterString=&quot;Last%20Run&quot;%3DMissed">Missed backups</a>
+              <br/>
+              <a href="Ordenalfabetix?form.filterString=&quot;Last%20Run&quot;%3DFailed">Failed backups</a>
+              <br/>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </html>
+  </row>
+</form>

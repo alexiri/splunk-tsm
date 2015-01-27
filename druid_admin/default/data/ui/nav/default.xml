@@ -1,0 +1,56 @@
+<nav search_view="search" color="#0072C6">
+    <view name="Panoramix" default="true" />
+    <collection label="Nodes">
+        <view name="Ordenalfabetix" />
+        <divider />
+
+        <collection label="Node Information">
+            <view name="node_data" />
+            <view name="node_traffic" />
+            <view name="node_logs" />
+            <view name="node_info" />
+        </collection>
+
+        <divider />
+        <view name="node_config" />
+        <view name="nap_config" />
+    </collection>
+    <collection label="TSM Servers">
+        <view name="Obelix" />
+        <divider />
+        <view name="server_sizes" />
+        <view name="migration_status" />
+        <view name="network" />
+        <divider />
+        <view name="server_config" />
+    </collection>
+    <collection label="Tape Infrastructure">
+        <view name="Asuranceturix" />
+        <view name="tape_supply" />
+        <divider />
+        <view name="tape_mounts" />
+        <view name="drive_debug" />
+        <view name="tape_debug" />
+    </collection>
+    <collection label="Service Metrics">
+        <view name="total_data" />
+        <view name="daily_traffic" />
+        <view name="c5_statistics" />
+    </collection>
+    <collection label="Errors">
+        <view name="Idefix" />
+    </collection>
+    <view name="search" />
+    <collection label="Druid">
+        <view name="Vitalstatistix" />
+        <view name="externals" />
+        <view name="tsmdb_index" />
+        <view name="druid_usage" />
+    </collection>
+    <collection label="Other Dashboards">
+        <view source="unclassified" />
+    </collection>
+    <collection label="Saved Searches">
+        <saved source="unclassified" />
+    </collection>
+</nav>

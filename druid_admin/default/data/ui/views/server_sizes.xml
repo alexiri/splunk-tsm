@@ -1,0 +1,36 @@
+<dashboard>
+  <label>Server Sizes</label>
+  <description>This dashboard shows the relative sizes of all TSM servers</description>
+  <row>
+    <panel>
+      <chart>
+        <search>
+          <query>`daily_occupancy_stats_macro` | lookup serverinfo TSMSERVER AS tsmserver | search SERVER_STATUS=production SERVER_TYPE=user | eval reporting_pb=reporting_mb/1024/1024/1024 | eval num_files_mil=num_files/1000000 | makemv delim="," USAGE | stats first(USAGE) AS Usage sum(reporting_pb) AS "Total data in PB" sum(num_files_mil) AS "Million files" count AS "Number of Nodes" by tsmserver</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">bubble</option>
+        <option name="charting.chart.bubbleMaximumSize">80</option>
+        <option name="charting.chart.bubbleMinimumSize">5</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+</dashboard>

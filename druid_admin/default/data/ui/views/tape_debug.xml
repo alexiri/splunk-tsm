@@ -1,0 +1,84 @@
+<form>
+ <label>Tape troubleshooting</label>
+ <description></description>
+ <fieldset autoRun="true" submitButton="false">
+  <input type="time" token="time" searchWhenChanged="true">
+    <label></label>
+    <default>Last 24 hours</default>
+  </input>
+  <input type="text" token="volume" searchWhenChanged="true">
+   <label>Tape volume:</label>
+   <default>I12345</default>
+  </input>
+ </fieldset>
+
+ <searchTemplate>
+   | inputlookup tapevolumeinfo | search VOLUME_NAME=$volume$ | eval USED_GB=round(USED_MB/1024,1) | eval EST_CAPACITY_GB=round(EST_CAPACITY_MB/1024,1)
+ </searchTemplate>
+
+ <row grouping="9">
+   <single>
+     <option name="field">LIBRARY_NAME</option>
+     <option name="underLabel">Tape Library</option>
+   </single>
+   <single>
+     <option name="field">LV_STATUS</option>
+     <option name="underLabel">Libvol Status</option>
+   </single>
+   <single>
+     <option name="field">tsmserver</option>
+     <option name="underLabel">TSM Server</option>
+   </single>
+   <single>
+     <option name="field">STGPOOL</option>
+     <option name="underLabel">Storage Pool</option>
+   </single>
+   <single>
+     <option name="field">STATUS</option>
+     <option name="underLabel">Status</option>
+   </single>
+   <single>
+     <option name="field">USED_GB</option>
+     <option name="underLabel">Used (GB)</option>
+   </single>
+   <single>
+     <option name="field">EST_CAPACITY_GB</option>
+     <option name="underLabel">Capacity (est) (GB)</option>
+   </single>
+   <single>
+     <option name="field">PCT_UTILIZED</option>
+     <option name="underLabel">Utilization (%)</option>
+   </single>
+   <single>
+     <option name="field">MEDIATYPE</option>
+     <option name="underLabel">Format</option>
+   </single>
+ </row>
+
+ <row>
+   <table>
+     <title>Libvolumes Information</title>
+     <searchString>VOLUME_NAME=$volume$ `lastdb("libvolumes")` | table tsmserver LIBRARY_NAME MEDIATYPE STATUS OWNER HOME_ELEMENT</searchString>
+     <earliestTime>$time.earliest$</earliestTime>
+     <earliestTime>$time.latest$</earliestTime>
+     <drilldown>off</drilldown>
+   </table>
+   <table>
+     <title>Volumes Information</title>
+     <searchString>VOLUME_NAME=$volume$ `lastdb("volumes")` | eval EST_USED_GB=round(exact(EST_CAPACITY_MB*PCT_UTILIZED/100/1024), 1) | table tsmserver STGPOOL_NAME STATUS EST_USED_GB EST_CAPACITY_MB PCT_UTILIZED PCT_RECLAIM ACCESS SCRATCH TIMES_MOUNTED LAST_READ_DATE LAST_WRITE_DATE ERROR_STATE READ_ERRORS WRITE_ERRORS</searchString>
+     <earliestTime>$time.earliest$</earliestTime>
+     <earliestTime>$time.latest$</earliestTime>
+     <drilldown>off</drilldown>
+   </table>
+ </row>
+
+ <row>
+   <event>
+     <title>Results</title>
+     <searchString>index=tsmlogs tapevolume="$volume$"</searchString>
+     <earliestTime>$time.earliest$</earliestTime>
+     <earliestTime>$time.latest$</earliestTime>
+   </event>
+ </row>
+
+</form>

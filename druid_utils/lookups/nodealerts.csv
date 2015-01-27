@@ -1,0 +1,3 @@
+starttime,tsmserver,node,napid,type,alert,comment
+1371679200,TSM516,NODE1,1,start,NO,"do not need alerts for missed backups because its is only archiving"
+4085589600,TSM516,NODE1,1,end,YES,""

@@ -1,0 +1,318 @@
+<form>
+  <label>Oracle Restores</label>
+  <searchTemplate>
+    <![CDATA[
+	index=tsmlogs tsmserver=TSM615 (tsmcode=ANR8337I OR tsmcode=ANR8468I OR tsmcode=ANR0510I OR tsmcode=ANR0514I OR tsmcode=ANE4991I) NOT process=* NOT diskvolume=*
+	| rex "backup piece (?<filename>[/\w\_\-\.]+\w)" | rex "Total bytes (sent|received): (?<bytes>\d+). Total processing time: (?<hours>\d{2}):(?<mins>\d{2}):(?<secs>\d{2})." | rex "Total processing time: (?<time_str>[\d:]+)." | eval time=hours*60*60+mins*60+secs
+    | eval mbps=bytes/1024/1024/time
+    | eval mbytes=round(bytes/1024/1024, 2)
+    | eval restore_time=if(searchmatch("ANU2527I"), _time, NULL)
+	| eval action=if(searchmatch("ANU2527I"), "restore", if(searchmatch("ANU2526I"), "backup", NULL))
+    | eval conn=split(rtrim(if(isnotnull(session), if(mvcount(session)>1, mvindex(session,0), session) + "s;", "") + if(isnotnull(tapevolume), tostring(upper(if(mvcount(tapevolume)>1, mvindex(tapevolume,0), tapevolume))), ""), ";"), ";")
+    | transaction conn startswith="ANR8337I" endswith="ANR8468I"
+	| eval fpm=mvcount(filename)
+    | convert ctime(restore_time)
+  ]]>
+  </searchTemplate>
+  <earliestTime>$time.earliest$</earliestTime>
+  <latestTime>$time.latest$</latestTime>
+  <fieldset submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label></label>
+      <default>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="dropdown" token="tsmserver" searchWhenChanged="true">
+      <label>TSM Server</label>
+      <search>
+        <query>| inputlookup serverinfo | search USAGE=DB OR USAGE="Dual Copy"</query>
+      </search>
+      <default>TSM615</default>
+      <fieldForLabel>TSMSERVER</fieldForLabel>
+      <fieldForValue>TSMSERVER</fieldForValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Files backed up and restored</title>
+      <chart>
+        <searchString>index=tsmlogs tsmserver=TSM615 tsmcode=ANE4991I (ANU2527I OR ANU2526I) | stats sum(eval(if(searchmatch("ANU2527I"), 1, 0))) AS Restore sum(eval(if(searchmatch("ANU2526I"), 1, 0))) AS Backup | transpose</searchString>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.stackMode">default</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Number of mounts for backups and restores</title>
+      <chart>
+        <searchPostProcess>top action</searchPostProcess>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.stackMode">default</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Distribution of tapes mounted for restores</title>
+      <chart>
+        <searchPostProcess>search action=restore | eval tapenode=tapevolume . " (" . node . ")" | top tapenode</searchPostProcess>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.stackMode">default</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Distribution of number of files restored per tape mount</title>
+      <chart>
+        <searchPostProcess>search action=restore | top fpm</searchPostProcess>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.stackMode">default</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Restored files per mount by nodes</title>
+      <chart>
+        <searchPostProcess>search action=restore | chart count over node by fpm</searchPostProcess>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.stackMode">stacked100</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Tapes mounted over time for backups</title>
+      <chart>
+        <searchPostProcess>search action=backup | timechart count by node</searchPostProcess>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisEnd</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Tapes mounted over time for restores</title>
+      <chart>
+        <searchPostProcess>search action=restore | timechart count by node</searchPostProcess>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisEnd</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Backup Speeds</title>
+      <chart>
+        <searchString>index=tsmlogs tsmserver=tsm615 tsmcode=ANE4991I ANU2526I           | rex "Total bytes (sent|received): (?&lt;bytes&gt;\d+). Total processing time: (?&lt;hours&gt;\d{2}):(?&lt;mins&gt;\d{2}):(?&lt;secs&gt;\d{2})."           | eval time=hours*60*60+mins*60+secs     	  | eval mbps=bytes/1024/1024/time 	      | timechart span=1h avg(mbps) by node</searchString>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisEnd</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Restore Speeds</title>
+      <chart>
+        <searchString>index=tsmlogs tsmserver=tsm615 tsmcode=ANE4991I ANU2527I           | rex "Total bytes (sent|received): (?&lt;bytes&gt;\d+). Total processing time: (?&lt;hours&gt;\d{2}):(?&lt;mins&gt;\d{2}):(?&lt;secs&gt;\d{2})."           | eval time=hours*60*60+mins*60+secs     	  | eval mbps=bytes/1024/1024/time 	      | timechart span=1h avg(mbps) by node</searchString>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisEnd</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Restores</title>
+      <input type="dropdown" token="node" searchWhenChanged="true">
+        <label>Node</label>
+        <populatingSearch earliest="$time.earliest$" latest="$time.latest$" fieldForLabel="node" fieldForValue="node">index=tsmlogs tsmserver=TSM615 tsmcode=ANE4991I AND ANU2527I | dedup node | sort node</populatingSearch>
+        <choice value="*">ALL</choice>
+        <default>*</default>
+      </input>
+      <input type="dropdown" token="tapevolume" searchWhenChanged="true">
+        <label>Tape Volume</label>
+        <populatingSearch earliest="$time.earliest$" latest="$time.latest$" fieldForLabel="tapevolume" fieldForValue="tapevolume">index=tsmlogs tsmserver=tsm615 tsmcode=ANR8337I | dedup tapevolume | sort tapevolume</populatingSearch>
+        <choice value="*">ALL</choice>
+        <default>*</default>
+      </input>
+      <table>
+        <searchPostProcess>search action=restore node=$node$ tapevolume=$tapevolume$ | sort restore_time | table node tapevolume tapedrive fpm session restore_time filename mbytes time_str mbps duration</searchPostProcess>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">20</option>
+      </table>
+      <html>
+     <h2>Restore Sessions</h2>
+     <div id="restores-search" class="splunk-manager" data-require="splunkjs/mvc/searchmanager" data-options="{              &quot;search&quot;: { &quot;type&quot;: &quot;token_safe&quot;, &quot;value&quot;: &quot;index=tsmlogs tsmserver=$$tsmserver$$ (tsmcode=ANR8337I OR tsmcode=ANR8468I OR tsmcode=ANR0510I OR tsmcode=ANR0514I OR (tsmcode=ANE4991I AND ANU2527I)) NOT process=* NOT diskvolume=*  | `oracle_get_time` | search node=$$node$$ tapevolume=$$tapevolume$$ | sort starttime asc&quot; },              &quot;earliest_time&quot;: { &quot;type&quot;: &quot;token_safe&quot;, &quot;value&quot;: &quot;$$time.earliest$$&quot; },              &quot;latest_time&quot;: { &quot;type&quot;: &quot;token_safe&quot;, &quot;value&quot;: &quot;$$time.latest$$&quot; },              &quot;cancelOnUnload&quot;: true,              &quot;preview&quot;: true          }">
+     </div>
+
+     <div id="restores-view" class="splunk-view" data-require="app/gantt/components/gantt/gantt" data-options="{             &quot;managerid&quot;: &quot;restores-search&quot;,             &quot;endField&quot;: &quot;restore_time&quot;,             &quot;durationField&quot;: &quot;time&quot;,             &quot;categoryLabel&quot;: &quot;Node&quot;,             &quot;categoryField&quot;: &quot;node&quot;,             &quot;seriesLabel&quot;: &quot;Tape Volume&quot;,             &quot;seriesField&quot;: &quot;tapevolume&quot;,             &quot;extrasField&quot;: &quot;extras&quot;          }">
+     </div>
+   </html>
+    </panel>
+  </row>
+</form>

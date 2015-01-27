@@ -1,0 +1,172 @@
+<form hideEdit="true" script="nap_edit.js">
+  <label>Node Information</label>
+  <searchTemplate>
+    <![CDATA[
+    | inputlookup nodeinfo
+    | `filter_nodes("NODE_NAME")`
+    | search tsmserver=$tsmserver$ NODE_NAME=$NODE_NAME$
+    | `contact_deptgroup(CONTACT)`
+    | eval _time=now()
+    | lookup nodealerts tsmserver node AS NODE_NAME OUTPUT alert AS ALERTS
+    | eval ALERTS=coalesce(ALERTS, ALERTS_DEFAULT, "YES")
+    | eval ALERTS=if(ALERTS=="YES", "Yes", "No")
+    | foreach *_TIME [eval <<FIELD>>=strftime(<<FIELD>>, "%F")]
+    | fillnull value="-" EXPIRE_TIME RETIRE_TIME USER_GROUP USER_SUBGROUP
+  ]]>
+  </searchTemplate>
+  <fieldset autoRun="True" submitButton="false">
+    <input type="dropdown" token="tsmserver" searchWhenChanged="true">
+      <label>TSM server</label>
+      <populatingSearch fieldForLabel="tsmserver" fieldForValue="tsmserver">| inputlookup nodeinfo | `filter_nodes("NODE_NAME")` | dedup tsmserver | sort tsmserver</populatingSearch>
+    </input>
+    <input type="dropdown" token="NODE_NAME" searchWhenChanged="True">
+      <label>Node name</label>
+      <populatingSearch fieldForValue="NODE_NAME" fieldForLabel="NODE_NAME">
+        <![CDATA[| inputlookup nodeinfo | `filter_nodes("NODE_NAME")` | search tsmserver=$tsmserver$ | dedup NODE_NAME | sort NODE_NAME]]>
+      </populatingSearch>
+    </input>
+  </fieldset>
+  <row>
+    <html src="node_navbar.html"/>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <option name="field">CONTACT</option>
+        <option name="underLabel">Contact</option>
+        <option name="link.visible">false</option>
+      </single>
+      <single>
+        <option name="field">contact_dept</option>
+        <option name="underLabel">Department</option>
+        <option name="link.visible">false</option>
+      </single>
+      <single>
+        <option name="field">contact_group</option>
+        <option name="underLabel">Group</option>
+        <option name="link.visible">false</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <option name="field">DOMAIN_NAME</option>
+        <option name="underLabel">Domain</option>
+        <option name="link.visible">false</option>
+      </single>
+      <single>
+        <option name="field">PLATFORM_NAME</option>
+        <option name="underLabel">Platform</option>
+        <option name="link.visible">false</option>
+      </single>
+      <single>
+        <option name="field">VERSION</option>
+        <option name="underLabel">Version</option>
+        <option name="link.visible">false</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <option name="field">ALERTS</option>
+        <option name="underLabel">Alerts Active</option>
+        <option name="link.visible">false</option>
+      </single>
+      <single>
+        <option name="field">BACKUP_CYCLE</option>
+        <option name="underLabel">Backup Cycle</option>
+        <option name="afterLabel">day(s)</option>
+        <option name="link.visible">false</option>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link>node_config?tsmserver=$tsmserver$&amp;node=$NODE_NAME$</link>
+        </drilldown>
+      </single>
+      <single>
+        <option name="field">EXPIRE_TIME</option>
+        <option name="underLabel">Expiration Date</option>
+        <option name="link.visible">false</option>
+        <option name="drilldown">all</option>
+        <drilldown target="_blank">
+          <link>https://you.service-now.com/service-portal/report-ticket.do?name=backup-node-extension&amp;se=Backup-Restore-Service&amp;Node=$NODE_NAME$%20($tsmserver$)</link>
+        </drilldown>
+      </single>
+      <single>
+        <option name="field">RETIRE_TIME</option>
+        <option name="underLabel">Retirement Date</option>
+        <option name="link.visible">false</option>
+        <option name="drilldown">all</option>
+        <drilldown target="_blank">
+          <link>https://you.service-now.com/service-portal/report-ticket.do?name=backup-node-deletion&amp;se=Backup-Restore-Service&amp;Nodes=$NODE_NAME$%20($tsmserver$)</link>
+        </drilldown>
+      </single>
+      <single>
+        <option name="field">USER_GROUP</option>
+        <option name="underLabel">Group</option>
+        <option name="drilldown">all</option>
+        <option name="link.visible">false</option>
+        <drilldown>
+          <link>node_config?tsmserver=$tsmserver$&amp;node=$NODE_NAME$</link>
+        </drilldown>
+      </single>
+      <single>
+        <option name="field">USER_SUBGROUP</option>
+        <option name="underLabel">Subgroup</option>
+        <option name="drilldown">all</option>
+        <option name="link.visible">false</option>
+        <drilldown>
+          <link>node_config?tsmserver=$tsmserver$&amp;node=$NODE_NAME$</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Schedules</title>
+      <table>
+        <searchString>| `schedule_info`
+        | `filter_nodes("NODE_NAME")`
+        | search tsmserver=$tsmserver$ NODE_NAME=$NODE_NAME$
+        | eval status_time=strftime(status_time, "%F %T")
+        | eval last_completed=strftime(last_completed, "%F %T")
+        | eval next_run=strftime(next_run, "%F %T")
+        | rename SCHEDULE_NAME AS "Schedule Name" status AS "Last Run" status_time AS "Last Run Time" last_completed AS "Last Successful Run" schedule_desc AS "Schedule Description" next_run AS "Next Scheduled Execution"
+        | table "Schedule Name" "Schedule Description" "Last Run" "Last Run Time" "Last Successful Run" "Next Scheduled Execution"</searchString>
+        <option name="link.visible">false</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Other Available Schedules</title>
+      <table>
+        <searchString>`tsmdb("client_schedules")` [search `lastdb("nodes")` | `filter_nodes("NODE_NAME")` | search tsmserver=$tsmserver$ NODE_NAME=$NODE_NAME$ | fields DOMAIN_NAME tsmserver]
+        | `schedule_desc`
+        | sort SCHEDULE_NAME
+        | rename SCHEDULE_NAME AS "Schedule Name" schedule_desc AS "Schedule Description" ACTION As Type
+        | table "Schedule Name" "Schedule Description" Type</searchString>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+        <option name="link.visible">false</option>
+      </table>
+    </panel>
+    <panel>
+      <title>No Alert periods</title>
+      <table>
+        <searchString>
+          <![CDATA[
+            | inputlookup nodealerts
+            | `filter_nodes("NODE_NAME")`
+            | search tsmserver=$tsmserver$ node=$NODE_NAME$
+            | stats first(eval(if(type="start", starttime, NULL))) AS start_time first(eval(if(type="start", alert, NULL))) AS alert first(eval(if(type="end", starttime, NULL))) AS end_time first(eval(if(type="start", comment, NULL))) AS comment by napid,tsmserver,node
+            | foreach *_time [eval <<FIELD>>=strftime(<<FIELD>>, "%F")]
+            | table tsmserver node start_time end_time alert comment
+          ]]>
+        </searchString>
+        <option name="link.visible">false</option>
+        <drilldown>
+          <link>nap_config?tsmserver=$row.tsmserver$&amp;node=$row.node$</link>
+        </drilldown>
+      </table>
+      <html>
+       <h2><a href="https://you.service-now.com/service-portal/report-ticket.do?name=request&amp;se=Backup-Restore-Service&amp;short_description=Ignore%20alerts%20for%20$NODE_NAME$%20($tsmserver$)" target="_blank">Request no-alert period</a></h2>
+      </html>
+    </panel>
+  </row>
+</form>

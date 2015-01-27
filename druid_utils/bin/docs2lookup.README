@@ -1,0 +1,41 @@
+The docs2lookup.sh script is used to generate the tsmcode-desc.csv lookup table.
+
+In order to do this, grab the following file from a TSM server:
+
+/opt/tivoli/tsm/server/bin/en_US/dsmen_US.hlp
+
+Then run docs2lookup.sh on said file and it will extract the TSM codes and their 
+descriptions and dump them to the lookup table.
+
+-------- Example --------
+[tsmmsdev04] ~ > scp root@tsm512:/opt/tivoli/tsm/server/bin/en_US/dsmen_US.hlp .
+dsmen_US.hlp                                                                                                   100% 6512KB   6.4MB/s   00:00    
+[tsmmsdev04] ~ > /opt/splunk/etc/apps/tsm-utils/bin/docs2lookup.sh dsmen_US.hlp 
++++ dirname /opt/splunk/etc/apps/tsm-utils/bin/docs2lookup.sh
+++ cd /opt/splunk/etc/apps/tsm-utils/bin
+++ pwd
++ DIR=/opt/splunk/etc/apps/tsm-utils/bin
++ LOOKUP=/opt/splunk/etc/apps/tsm-utils/bin/../lookups/tsmcode-desc.csv
++ echo tsmcode,description
++ sed -n '
+/TSMMSG/,$ { 
+    /^-\{72\}$/,/^$/ {
+        /^-\{72\}$/ b
+        s/^\(AN[ERS][0-9]\{4\}[IESWK]\)\s\+/\1,/
+        s/^\s\+/ /
+        p
+    }
+}
+' dsmen_US.hlp
++ awk '{ printf( "%s", $0 ); if ( $0 ~ /^$/ ){ printf("\n"); } }'
+[tsmmsdev04] ~ > head /opt/splunk/etc/apps/tsm-utils/lookups/tsmcode-desc.csv 
+tsmcode,description
+ANR0100E,Source file(line number): Error error code creating table "table name".
+ANR0101E,Source file(line number): Error error code opening table "table name".
+ANR0102E,Source file(line number): Error error code inserting row in table "table name".
+ANR0103E,Source file(line number): Error error code updating row in table "table name".
+ANR0104E,Source file(line number): Error error code deleting row from table "table name".
+ANR0105E,Source file(line number): Error setting search bounds for table "table name".
+ANR0106E,Source file(line number): Unexpected error error code fetching row in table "table name".
+ANR0107W,Source file(line number): Transaction transaction ID was not committed due to an internal error.
+ANR0108E,Source file(line number): could not start a new transaction.

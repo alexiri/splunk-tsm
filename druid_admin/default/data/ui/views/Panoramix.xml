@@ -1,0 +1,168 @@
+<dashboard refresh="120">
+  <label>Panoramix</label>
+  <description>Service Status Overview</description>
+  <searchTemplate>| inputlookup serverinfo
+    | where SERVER_STATUS="production"
+    | rename TSMSERVER as tsmserver
+    | join type=left tsmserver
+        [search index=tsmdb earliest=-15m
+        | table tsmserver
+        | stats count by tsmserver]
+    | eval count=if(isnull(count),0,count)
+    | eval up=if(count&gt;0,"yes","no")
+    | join type=left tsmserver
+        [ search `lastdb("db")`
+        | eval Days = round((_time - strptime(LAST_BACKUP_DATE, "%Y-%m-%d %H:%M:%S"))/(3600*24),1)]
+    | join type=left tsmserver
+        [ search `lastdb("stgpools")`
+        | search STGPOOL_NAME="BACKUPPOOL"]
+    | join type=left tsmserver
+        [ search index=tsmlogs tsmcode=ANR8337I earliest=-24h | stats count by tsmserver]
+        | eval Summary=if(tonumber(count)&gt;0, if(tonumber(Days)&lt;1, if(up="yes", if(SERVER_TYPE="library_manager", if(tonumber(PCT_UTILIZED)&lt;99, 0, 1), if(tonumber(PCT_UTILIZED)&lt;60, 0, 1)), 1), 1), 1)
+    | rangemap field="Summary" low=0-0 default=severe
+    | fields *</searchTemplate>
+  <earliestTime>-24h</earliestTime>
+  <row grouping="4,6">
+    <single>
+      <title>TSM Library Managers</title>
+      <searchPostProcess>where up="yes" AND SERVER_TYPE="library_manager"
+    | stats count as total sum(eval(up=="yes")) as count_up
+    | eval range=case(count_up == total, "low", count_up &gt;= total * 0.9, "elevated", count_up &gt;= 0, "severe")
+    | table count_up, range</searchPostProcess>
+      <option name="classField">range</option>
+      <option name="beforeLabel">A total of</option>
+      <option name="afterLabel">library managers out of 2 are up and running!</option>
+    </single>
+    <table id="table_tsm_lm">
+      <searchPostProcess>where SERVER_TYPE="library_manager"
+     | rename range as Status, count as "# Mounts/24h", PCT_UTILIZED as "BackupPool %", Days as "Days since last Backup"
+     | table tsmserver, up, "Days since last Backup", "BackupPool %", "# Mounts/24h", Status</searchPostProcess>
+      <option name="drilldown">row</option>
+      <option name="count">50</option>
+      <drilldown>
+        <link>Obelix?form.tsmserver=$row.tsmserver$</link>
+      </drilldown>
+    </table>
+    <single>
+      <title>TSM Servers</title>
+      <searchPostProcess>where SERVER_TYPE!="library_manager"
+    | stats count as total sum(eval(up=="yes")) as count_up
+    | eval range=case(count_up == total, "low", count_up &gt;= total * 0.9, "elevated", count_up &gt;= 0, "severe")
+    | table count_up, range</searchPostProcess>
+      <option name="classField">range</option>
+      <option name="beforeLabel">A total of</option>
+      <option name="afterLabel">servers out of 14 are up and running!</option>
+    </single>
+    <table id="table_tsm_ser">
+      <searchPostProcess>where SERVER_TYPE!="library_manager"
+     | rename range as Status, count as "# Mounts/24h", PCT_UTILIZED as "BackupPool %", Days as "Days since last Backup"
+     | table tsmserver, up, "Days since last Backup", "BackupPool %", "# Mounts/24h", Status</searchPostProcess>
+      <option name="drilldown">row</option>
+      <option name="count">50</option>
+      <drilldown>
+        <link>Obelix?form.tsmserver=$row.tsmserver$</link>
+      </drilldown>
+    </table>
+    <single>
+      <title>Online Drives</title>
+      <searchString>`lastdb("drives")`
+     | stats count as total sum(eval(ONLINE=="YES" and DEVICE_TYPE=="3592")) as count_up
+     | eval range=case(count_up == total, "low", count_up &gt;= total * 0.9, "elevated", count_up &gt;= 0, "severe")
+     | table count_up, range</searchString>
+      <earliestTime>-24h</earliestTime>
+      <option name="field">count_up</option>
+      <option name="classField">range</option>
+      <option name="beforeLabel">A total of</option>
+      <option name="afterLabel">drives out of 55 are online!</option>
+      <option name="drilldown">all</option>
+      <drilldown>
+          <link>Asuranceturix</link>
+      </drilldown>
+    </single>
+    <table id="table_drives_lib0">
+      <title>IBMLIB0 Offline Drives</title>
+      <searchString>LIBRARY_NAME="TSMLIB0" (ONLINE!="YES" OR DEVICE_TYPE!="3592") `lastdb("drives")`
+     | appendpipe
+         [ stats count
+         | eval DRIVE_NAME="All IBMLIB0 drives are ONLINE"
+         | where count==0 ]
+     | sort by DRIVE_NAME
+     | table DRIVE_NAME, ONLINE, DEVICE_TYPE, DRIVE_STATE</searchString>
+      <earliestTime>-24h</earliestTime>
+      <option name="drilldown">row</option>
+      <option name="count">90</option>
+      <drilldown>
+        <link>drive_debug?form.drive=$row.DRIVE_NAME$</link>
+      </drilldown>
+    </table>
+    <table id="table_drives_lib2">
+      <title>IBMLIB2 Offline Drives</title>
+      <searchString>LIBRARY_NAME="IBMLIB2" AND (ONLINE!="YES" OR DEVICE_TYPE!="3592") `lastdb("drives")`
+     | appendpipe
+         [ stats count
+         | eval DRIVE_NAME="All IBMLIB2 drives are ONLINE"
+         | where count==0 ]
+     | sort by DRIVE_NAME
+     | table DRIVE_NAME, ONLINE, DEVICE_TYPE, DRIVE_STATE</searchString>
+      <earliestTime>-24h</earliestTime>
+      <option name="drilldown">row</option>
+      <option name="count">90</option>
+      <drilldown>
+        <link>drive_debug?form.drive=$row.DRIVE_NAME$</link>
+      </drilldown>
+    </table>
+    <single>
+      <title>IBMLIB0 Scratch Tapes</title>
+      <searchString>STATUS=Scratch LIBRARY_NAME="TSMLIB0" `lastdb("libvolumes")`
+     | stats count
+     | rangemap field=count low=100-9999999 elevated=10-99 default=severe</searchString>
+      <earliestTime>-24h</earliestTime>
+      <option name="classField">range</option>
+      <option name="beforeLabel">There are</option>
+      <option name="afterLabel">scratch tapes in IBMLIB0</option>
+      <option name="drilldown">all</option>
+      <drilldown>
+          <link>tape_supply</link>
+      </drilldown>
+    </single>
+    <single>
+      <title>IBMLIB2 Scratch Tapes</title>
+      <searchString>STATUS=Scratch LIBRARY_NAME="IBMLIB2" `lastdb("libvolumes")`
+     | stats count
+     | rangemap field=count low=100-9999999 elevated=10-99 default=severe</searchString>
+      <earliestTime>-24h</earliestTime>
+      <option name="classField">range</option>
+      <option name="beforeLabel">There are</option>
+      <option name="afterLabel">scratch tapes in IBMLIB2</option>
+      <option name="drilldown">all</option>
+      <drilldown>
+          <link>tape_supply</link>
+      </drilldown>
+    </single>
+    <chart>
+      <title>Errors</title>
+      <searchString>index=tsmlogs (tsmcode=ANR*E OR tsmcode=ANR*W)
+     | lookup tsmcode-alerts tsmcode as tsmcode OUTPUT alert as alert
+     | eval alert=if(isnull(alert), "other", alert)
+     | search alert!=ignore
+     | timechart count by alert</searchString>
+      <earliestTime>-24h</earliestTime>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="charting.axisTitleX.text">Time</option>
+    </chart>
+  </row>
+  <row>
+    <chart>
+      <title>Backup pool fill percentage</title>
+      <searchString>`tsmdb("stgpools")` | lookup serverinfo TSMSERVER AS tsmserver | search SERVER_TYPE=user STGPOOL_NAME="BACKUPPOOL" | timechart limit=20 span=1h avg(PCT_UTILIZED) AS PCT_UTILIZED by tsmserver | sort tsmserver</searchString>
+      <earliestTime>-7d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="charting.axisY.maximumNumber">100</option>
+      <option name="charting.axisTitleX.text">Time</option>
+    </chart>
+  </row>
+</dashboard>

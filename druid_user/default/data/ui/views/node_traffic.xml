@@ -1,0 +1,132 @@
+<form hideEdit="true">
+  <label>Node Traffic</label>
+  <search id="base">
+    <query>
+      <![CDATA[
+        index=tsm-accnt tsmserver=$tsmserver$ node=$NODE_NAME$
+        | `filter_nodes("node")`
+        | eval total_in_kb  = archive_in_kb  + backup_in_kb
+        | eval total_out_kb = archive_out_kb + backup_out_kb
+        | eval total_in_kb    = total_in_kb    / case("$unit$"=="Kilobytes", 1, "$unit$"=="Megabytes", 1024, "$unit$"=="Gigabytes", 1024*1024, "$unit$"=="Terabytes", 1024*1024*1024, "$unit$"=="Petabytes", 1024*1024*1024*1024)
+        | eval total_out_kb   = total_out_kb   / case("$unit$"=="Kilobytes", 1, "$unit$"=="Megabytes", 1024, "$unit$"=="Gigabytes", 1024*1024, "$unit$"=="Terabytes", 1024*1024*1024, "$unit$"=="Petabytes", 1024*1024*1024*1024)
+        | eval archive_in_kb  = archive_in_kb  / case("$unit$"=="Kilobytes", 1, "$unit$"=="Megabytes", 1024, "$unit$"=="Gigabytes", 1024*1024, "$unit$"=="Terabytes", 1024*1024*1024, "$unit$"=="Petabytes", 1024*1024*1024*1024)
+        | eval backup_in_kb   = backup_in_kb   / case("$unit$"=="Kilobytes", 1, "$unit$"=="Megabytes", 1024, "$unit$"=="Gigabytes", 1024*1024, "$unit$"=="Terabytes", 1024*1024*1024, "$unit$"=="Petabytes", 1024*1024*1024*1024)
+        | eval archive_out_kb = archive_out_kb / case("$unit$"=="Kilobytes", 1, "$unit$"=="Megabytes", 1024, "$unit$"=="Gigabytes", 1024*1024, "$unit$"=="Terabytes", 1024*1024*1024, "$unit$"=="Petabytes", 1024*1024*1024*1024)
+        | eval backup_out_kb  = backup_out_kb  / case("$unit$"=="Kilobytes", 1, "$unit$"=="Megabytes", 1024, "$unit$"=="Gigabytes", 1024*1024, "$unit$"=="Terabytes", 1024*1024*1024, "$unit$"=="Petabytes", 1024*1024*1024*1024)
+      ]]>
+    </query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <fieldset autoRun="True" submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label/>
+      <default>
+        <earliest>-30d</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="tsmserver" searchWhenChanged="True">
+      <label>TSM server</label>
+      <search>
+        <query><![CDATA[| inputlookup nodeinfo | `filter_nodes("NODE_NAME")` | dedup tsmserver]]></query>
+      </search>
+      <fieldForLabel>tsmserver</fieldForLabel>
+      <fieldForValue>tsmserver</fieldForValue>
+    </input>
+    <input type="dropdown" token="NODE_NAME" searchWhenChanged="True">
+      <label>Node name</label>
+      <search>
+        <query><![CDATA[| inputlookup nodeinfo | `filter_nodes("NODE_NAME")` | search tsmserver=$tsmserver$]]></query>
+      </search>
+      <fieldForLabel>NODE_NAME</fieldForLabel>
+      <fieldForValue>NODE_NAME</fieldForValue>
+    </input>
+  </fieldset>
+  <row>
+    <html src="node_navbar.html"/>
+  </row>
+  <row>
+    <panel>
+      <title>Daily Traffic</title>
+      <input type="dropdown" token="unit" searchWhenChanged="true">
+        <label>Units</label>
+        <choice value="Kilobytes">Kilobytes</choice>
+        <choice value="Megabytes">Megabytes</choice>
+        <choice value="Gigabytes">Gigabytes</choice>
+        <choice value="Terabytes">Terabytes</choice>
+        <choice value="Petabytes">Petabytes</choice>
+        <default>Gigabytes</default>
+        <change>
+          <condition label="Kilobytes">
+            <set token="unit_short">KB</set>
+          </condition>
+          <condition label="Megabytes">
+            <set token="unit_short">MB</set>
+          </condition>
+          <condition label="Gigabytes">
+            <set token="unit_short">GB</set>
+          </condition>
+          <condition label="Terabytes">
+            <set token="unit_short">TB</set>
+          </condition>
+          <condition label="Petabytes">
+            <set token="unit_short">PB</set>
+          </condition>
+        </change>
+      </input>
+      <input type="radio" token="backarch" searchWhenChanged="true">
+        <label/>
+        <choice value="sum(total_in_kb) AS total_in_kb sum(total_out_kb) AS total_out_kb">Combine backup and archive</choice>
+        <choice value="sum(archive_in_kb) AS archive_in_kb sum(backup_in_kb) AS backup_in_kb sum(archive_out_kb) AS archive_out_kb sum(backup_out_kb) AS backup_out_kb">Separate backup and archive</choice>
+        <default>sum(total_in_kb) AS total_in_kb sum(total_out_kb) AS total_out_kb</default>
+      </input>
+      <chart>
+        <search base="base">
+          <query>timechart $backarch$
+            | rename total_in_kb AS "Total in" total_out_kb AS "Total out" archive_in_kb AS "Archive in" backup_in_kb AS "Backup in" archive_out_kb AS "Archive out" backup_out_kb AS "Backup out"
+          </query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">$unit$</option>
+        <option name="link.visible">false</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Sessions</title>
+      <table>
+        <search base="base">
+          <query>search total_in_kb>0 OR total_out_kb>0
+          | rename _time AS Time total_in_kb AS "Total in ($unit_short$)" total_out_kb AS "Total out ($unit_short$)" archive_in_kb AS "Archive in ($unit_short$)" backup_in_kb AS "Backup in ($unit_short$)" archive_out_kb AS "Archive out ($unit_short$)" backup_out_kb AS "Backup out ($unit_short$)"
+          | convert timeformat="%Y-%m-%d %H:%M:%S" ctime(Time)
+          | table Time "Total in ($unit_short$)" "Archive in ($unit_short$)" "Backup in ($unit_short$)" "Total out ($unit_short$)" "Archive out ($unit_short$)" "Backup out ($unit_short$)"
+          </query>
+        </search>
+        <option name="rowNumbers">true</option>
+        <option name="count">10</option>
+        <option name="showPager">true</option>
+        <option name="link.visible">false</option>
+      </table>
+    </panel>
+  </row>
+</form>

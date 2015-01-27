@@ -1,0 +1,48 @@
+<panel>
+  <title>ServiceNow Actions</title>
+  <html>
+    <ul style="list-style: none;">
+      <li>
+        <a href="https://you.service-now.com/service-portal/report-ticket.do?name=backup-node-registration&amp;se=Backup-Restore-Service" title="Make a request">
+          <img alt="Standard ticket" src="https://you.service-now.com/service-portal/CSP-wand.pngx" width="16" height="16"/>
+          Request backup node registration
+        </a>
+      </li>
+
+      <li>
+        <a title="Make a request" href="https://you.service-now.com/service-portal/report-ticket.do?name=backup-password-reset&amp;se=Backup-Restore-Service">
+          <img alt="Standard ticket" src="https://you.service-now.com/service-portal/CSP-wand.pngx" width="16" height="16"/>
+          Request backup node password reset
+        </a>
+      </li>
+
+      <li>
+        <a title="Make a request" href="https://you.service-now.com/service-portal/report-ticket.do?name=backup-node-deletion&amp;se=Backup-Restore-Service">
+          <img alt="Standard ticket" src="https://you.service-now.com/service-portal/CSP-wand.pngx" width="16" height="16"/>
+          Request backup node deletion
+        </a>
+      </li>
+
+      <li>
+        <a title="Make a request" href="https://you.service-now.com/service-portal/report-ticket.do?name=backup-node-extension&amp;se=Backup-Restore-Service">
+          <img alt="Standard ticket" src="https://you.service-now.com/service-portal/CSP-wand.pngx" width="16" height="16"/>
+          Request backup node expiration extension
+        </a>
+      </li>
+
+      <li>
+        <a title="Make a request" href="https://you.service-now.com/service-portal/report-ticket.do?name=request&amp;se=Backup-Restore-Service">
+          <img alt="Standard ticket" src="https://you.service-now.com/service-portal/CSP-wand.pngx" width="16" height="16"/>
+          Submit a general request
+        </a>
+      </li>
+
+      <li>
+        <a href="https://you.service-now.com/service-portal/report-ticket.do?name=incident&amp;se=Backup-Restore-Service" title="Report an incident">
+          <img alt="Standard ticket" src="https://you.service-now.com/service-portal/CSP-wand.pngx" width="16" height="16"/>
+          Report an incident
+        </a>
+      </li>
+    </ul>
+  </html>
+</panel>

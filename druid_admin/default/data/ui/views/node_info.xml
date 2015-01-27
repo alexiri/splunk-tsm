@@ -1,0 +1,143 @@
+<form script="nap_edit.js">
+  <label>Node Information</label>
+  <searchTemplate>
+    <![CDATA[
+    | inputlookup nodeinfo
+    | search tsmserver=$tsmserver$ NODE_NAME=$NODE_NAME$
+    | `contact_deptgroup(CONTACT)`
+    | eval _time=now()
+    | lookup nodealerts tsmserver node AS NODE_NAME OUTPUT alert AS ALERTS
+    | eval ALERTS=coalesce(ALERTS, ALERTS_DEFAULT, "YES")
+    | eval ALERTS=if(ALERTS=="YES", "Yes", "No")
+    | foreach *_TIME [eval <<FIELD>>=strftime(<<FIELD>>, "%F")]
+    | fillnull value="-" EXPIRE_TIME RETIRE_TIME
+  ]]>
+  </searchTemplate>
+  <fieldset autoRun="True" submitButton="false">
+    <input type="dropdown" token="tsmserver" searchWhenChanged="true">
+      <label>TSM server</label>
+      <populatingSearch fieldForLabel="tsmserver" fieldForValue="tsmserver">| inputlookup nodeinfo | dedup tsmserver | sort tsmserver</populatingSearch>
+    </input>
+    <input type="dropdown" token="NODE_NAME" searchWhenChanged="True">
+      <label>Node name</label>
+      <populatingSearch fieldForValue="NODE_NAME" fieldForLabel="NODE_NAME">
+        <![CDATA[| inputlookup nodeinfo | search tsmserver=$tsmserver$ | dedup NODE_NAME | sort NODE_NAME]]>
+      </populatingSearch>
+    </input>
+  </fieldset>
+  <row>
+    <html src="node_navbar.html"/>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <option name="field">CONTACT</option>
+        <option name="underLabel">Contact</option>
+      </single>
+      <single>
+        <option name="field">contact_dept</option>
+        <option name="underLabel">Department</option>
+      </single>
+      <single>
+        <option name="field">contact_group</option>
+        <option name="underLabel">Group</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <option name="field">DOMAIN_NAME</option>
+        <option name="underLabel">Domain</option>
+      </single>
+      <single>
+        <option name="field">PLATFORM_NAME</option>
+        <option name="underLabel">Platform</option>
+      </single>
+      <single>
+        <option name="field">VERSION</option>
+        <option name="underLabel">Version</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <option name="field">ALERTS</option>
+        <option name="underLabel">Alerts Active</option>
+      </single>
+      <single>
+        <option name="field">BACKUP_CYCLE</option>
+        <option name="underLabel">Backup Cycle</option>
+        <option name="afterLabel">day(s)</option>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link>node_config?form.tsmserver=$tsmserver$&amp;form.node=$NODE_NAME$</link>
+        </drilldown>
+      </single>
+      <single>
+        <option name="field">EXPIRE_TIME</option>
+        <option name="underLabel">Expiration Date</option>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link>node_config?form.tsmserver=$tsmserver$&amp;form.node=$NODE_NAME$</link>
+        </drilldown>
+      </single>
+      <single>
+        <option name="field">RETIRE_TIME</option>
+        <option name="underLabel">Retirement Date</option>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link>node_config?form.tsmserver=$tsmserver$&amp;form.node=$NODE_NAME$</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Schedules</title>
+      <table>
+        <searchString>| `schedule_info`
+        | search tsmserver=$tsmserver$ NODE_NAME=$NODE_NAME$
+        | eval status_time=strftime(status_time, "%F %T")
+        | eval last_completed=strftime(last_completed, "%F %T")
+        | eval next_run=strftime(next_run, "%F %T")
+        | rename SCHEDULE_NAME AS "Schedule Name" status AS "Last Run" status_time AS "Last Run Time" last_completed AS "Last Successful Run" schedule_desc AS "Schedule Description" next_run AS "Next Scheduled Execution"
+        | table "Schedule Name" "Schedule Description" "Last Run" "Last Run Time" "Last Successful Run" "Next Scheduled Execution"</searchString>
+      </table>
+    </panel>
+    <panel>
+      <title>Other Available Schedules</title>
+      <table>
+        <searchString>`tsmdb("client_schedules")` [search `lastdb("nodes")` | search tsmserver=$tsmserver$ NODE_NAME=$NODE_NAME$ | fields DOMAIN_NAME tsmserver]
+        | `schedule_desc`
+        | sort SCHEDULE_NAME
+        | rename SCHEDULE_NAME AS "Schedule Name" schedule_desc AS "Schedule Description" ACTION As Type
+        | table "Schedule Name" "Schedule Description" Type</searchString>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </table>
+    </panel>
+    <panel>
+      <title>No Alert periods</title>
+      <table>
+        <searchString>
+          <![CDATA[
+            | inputlookup nodealerts
+            | search tsmserver=$tsmserver$ node=$NODE_NAME$
+            | stats first(eval(if(type="start", starttime, NULL))) AS start_time first(eval(if(type="start", alert, NULL))) AS alert first(eval(if(type="end", starttime, NULL))) AS end_time first(eval(if(type="start", comment, NULL))) AS comment by napid,tsmserver,node
+            | foreach *_time [eval <<FIELD>>=strftime(<<FIELD>>, "%F")]
+            | table tsmserver node start_time end_time alert comment
+          ]]>
+        </searchString>
+        <option name="drilldown">row</option>
+        <drilldown>
+          <link>nap_config?form.tsmserver=$row.tsmserver$&amp;form.node=$row.node$</link>
+        </drilldown>
+      </table>
+      <single>
+        <searchString>| stats count | eval field="Edit no-alert periods" | fields field</searchString>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link>nap_config?form.tsmserver=$tsmserver$&amp;form.node=$NODE_NAME$</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,91 @@
+<form hideEdit="true" script="edittable:edittable.js" stylesheet="edittable:edittable.css">
+  <label>Node Editor</label>
+  <description>This interface allows you to configure retirements, backup delays and groups for nodes.</description>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="tsmserver" searchWhenChanged="true">
+      <label>TSM Server</label>
+      <search>
+        <query>| inputlookup nodeinfo | `filter_nodes("NODE_NAME")` | where isnull(DEL_TIME) | search NODE_NAME=$node$ CONTACT=$contact$ | dedup tsmserver | sort tsmserver</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>tsmserver</fieldForLabel>
+      <fieldForValue>tsmserver</fieldForValue>
+    </input>
+    <input type="dropdown" token="node" searchWhenChanged="true">
+      <label>Node Name</label>
+      <search>
+        <query>| inputlookup nodeinfo | `filter_nodes("NODE_NAME")` | where isnull(DEL_TIME) | search tsmserver=$tsmserver$ CONTACT=$contact$ | dedup NODE_NAME | sort NODE_NAME</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>NODE_NAME</fieldForLabel>
+      <fieldForValue>NODE_NAME</fieldForValue>
+    </input>
+    <input type="dropdown" token="contact" searchWhenChanged="true">
+      <label>Contact</label>
+      <search>
+        <query>| inputlookup nodeinfo | `filter_nodes("NODE_NAME")` | where isnull(DEL_TIME) | search tsmserver=$tsmserver$ NODE_NAME=$node$ | dedup CONTACT | sort CONTACT</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>CONTACT</fieldForLabel>
+      <fieldForValue>CONTACT</fieldForValue>
+    </input>
+  </fieldset>
+  <row>
+    <html>
+      <ul>
+        <li><b>Group and Subgroup</b>: Free-text fields that allow you to label your nodes however you wish. For example, you might want to place all machines for a particular service within the same group, and then separate them into subgroups such as prod/dev, front-end/back-end, etc. You can then use these groupings in the <a href="total_data">Total Data</a> and <a href="daily_traffic">Daily Traffic</a> dashboards to get aggregated statistics.</li>
+        <li><b>Backup Cycle</b>: how often (in days) your backup runs. If your backup hasn't run in this many days, an alert will be triggered.</li>
+        <li><b>Default Alert State</b>: whether missed-backup alerts are triggered by default on your node. These alerts can also be <a href="https://you.service-now.com/service-portal/report-ticket.do?name=request&amp;se=Backup-Restore-Service&amp;short_description=Ignore%20alerts" target="_blank">temporarily silenced</a>.</li>
+        <li><b>Expiration Date</b>: date when a node's registration will expire. You can <a href="https://you.service-now.com/service-portal/report-ticket.do?name=backup-node-extension&amp;se=Backup-Restore-Service" target="_blank">request an extension</a> through Service Now.</li>
+        <li><b>Retirement Date</b>: date when a node's data will be deleted. You can <a href="https://you.service-now.com/service-portal/report-ticket.do?name=backup-node-deletion&amp;se=Backup-Restore-Service" target="_blank">request a node deletion</a> through Service Now.</li>
+      </ul>
+    </html>
+  </row>
+  <row>
+    <panel>
+      <title></title>
+      <table id="nodeinfo_edit">
+        <searchString>| inputlookup nodeinfo
+          | `filter_nodes("NODE_NAME")`
+          | where isnull(DEL_TIME)
+          | search tsmserver=$tsmserver$ NODE_NAME=$node$ CONTACT=$contact$
+          | rename tsmserver AS "TSM Server" NODE_NAME AS Node CONTACT AS Contact USER_GROUP AS Group USER_SUBGROUP AS Subgroup BACKUP_CYCLE AS "Backup Cycle" ALERTS_DEFAULT AS "Default Alert State" EXPIRE_TIME AS "Expiration Date" RETIRE_TIME AS "Retirement Date"
+          | table "TSM Server" Node Contact Group Subgroup "Backup Cycle" "Default Alert State" "Expiration Date" "Retirement Date"
+          | sort "TSM Server" Node</searchString>
+        <option name="drilldown">none</option>
+        <option name="link.visible">false</option>
+        <option name="count">50</option>
+        <option name="table.lookup">nodeinfo</option>
+        <option name="table.field.0.fieldname">tsmserver</option>
+        <option name="table.field.0.readonly">true</option>
+        <option name="table.field.1.fieldname">NODE_NAME</option>
+        <option name="table.field.1.readonly">true</option>
+        <option name="table.field.2.fieldname">CONTACT</option>
+        <option name="table.field.2.readonly">true</option>
+        <option name="table.field.3.fieldname">USER_GROUP</option>
+        <option name="table.field.4.fieldname">USER_SUBGROUP</option>
+        <option name="table.field.5.fieldname">BACKUP_CYCLE</option>
+        <option name="table.field.5.type">numeric</option>
+        <option name="table.field.5.allownull">false</option>
+        <option name="table.field.5.numeric.greaterthan">0</option>
+        <option name="table.field.6.fieldname">ALERTS_DEFAULT</option>
+        <option name="table.field.6.type">dropdown</option>
+        <option name="table.field.6.choice.0.label">No</option>
+        <option name="table.field.6.choice.0.value">NO</option>
+        <option name="table.field.6.choice.1.label">Yes</option>
+        <option name="table.field.6.choice.1.value">YES</option>
+        <option name="table.field.7.fieldname">EXPIRE_TIME</option>
+        <option name="table.field.7.readonly">true</option>
+        <option name="table.field.7.type">datepicker</option>
+        <option name="table.field.7.datepicker.mindate">0</option>
+        <option name="table.field.8.fieldname">RETIRE_TIME</option>
+        <option name="table.field.8.readonly">true</option>
+        <option name="table.field.8.type">datepicker</option>
+        <option name="table.field.8.datepicker.mindate">0</option>
+      </table>
+    </panel>
+  </row>
+</form>

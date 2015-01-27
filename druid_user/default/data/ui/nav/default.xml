@@ -1,0 +1,23 @@
+<nav color="#0072C6">
+    <view name="main" default="true" />
+    <view name="Ordenalfabetix" />
+
+    <collection label="Node Information">
+        <view name="node_data" />
+        <view name="node_traffic" />
+        <view name="node_logs" />
+        <view name="node_info" />
+    </collection>
+
+    <view name="node_config" />
+
+    <view name="total_data" />
+    <view name="daily_traffic" />
+
+    <collection label="Other Dashboards">
+        <view source="unclassified" />
+    </collection>
+    <collection label="Saved Searches">
+        <saved source="unclassified" />
+    </collection>
+</nav>

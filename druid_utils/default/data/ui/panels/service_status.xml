@@ -1,0 +1,7 @@
+<panel>
+  <title>Service Status</title>
+  <html>
+    <iframe src="asdf" frameborder="0" height="100%" width="100%" scrolling="no">
+    </iframe>
+  </html>
+</panel>

@@ -1,0 +1,47 @@
+<form>
+  <label>Migration Status</label>
+  <fieldset submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label/>
+      <default>
+        <earliestTime>-72h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Migration Sessions</title>
+      <html>
+          <div id="migrations-search"
+            class="splunk-manager"
+            data-require="splunkjs/mvc/searchmanager"
+            data-options='{
+                "search": { "type": "token_safe", "value": "`gantt_migrations`" },
+                "earliest_time": { "type": "token_safe", "value": "$$time.earliest$$" },
+                "latest_time": { "type": "token_safe", "value": "$$time.latest$$" },
+                "cancelOnUnload": true,
+                "preview": true
+            }'>
+         </div>
+
+         <div id="migrations-view"
+            class="splunk-view"
+            data-require="app/gantt/components/gantt/gantt"
+            data-options='{
+                "managerid": "migrations-search",
+                "startField": "_time",
+                "durationField": "duration",
+                "categoryLabel": "Server",
+                "categoryField": "tsmserver",
+                "seriesLabel": "Speed",
+                "seriesField": "speed",
+                "seriesSort": "false",
+                "drilldownSearch": "search index=tsmlogs tsmserver=$tsmserver$ session=$session$ process=$process$",
+                "extrasField": "extras"
+            }'>
+         </div>
+      </html>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,63 @@
+<form>
+  <label>Client logs</label>
+  <search id="logs">
+    <query>
+      index=tsmlogs tsmcode=ane* tsmserver=$tsmserver$ node=$NODE_NAME$
+      | transaction session
+    </query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <fieldset autoRun="True" submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label/>
+      <default>
+        <earliest>-30d</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="tsmserver" searchWhenChanged="True">
+      <label>TSM server</label>
+      <search>
+        <query>| inputlookup nodeinfo | dedup tsmserver</query>
+      </search>
+      <fieldForLabel>tsmserver</fieldForLabel>
+      <fieldForValue>tsmserver</fieldForValue>
+    </input>
+    <input type="dropdown" token="NODE_NAME" searchWhenChanged="True">
+      <label>Node name</label>
+      <search>
+        <query>| inputlookup nodeinfo | search tsmserver=$tsmserver$</query>
+      </search>
+      <fieldForLabel>NODE_NAME</fieldForLabel>
+      <fieldForValue>NODE_NAME</fieldForValue>
+    </input>
+    <input type="text" token="search" searchWhenChanged="true">
+      <label>Search</label>
+      <default></default>
+    </input>
+  </fieldset>
+  <row>
+    <html src="node_navbar.html"/>
+  </row>
+  <row>
+    <panel>
+      <title>Client logs</title>
+      <html>
+        Please note that this interface <b>may not show the full client logs</b>, you should always review the local client logs on your system. Please consult the <a href="troubleshooting" target="_blank">troubleshooting guide</a> for more information about the log files and where you can find them.
+      </html>
+      <event>
+        <search base="logs">
+          <query>search index=* "$search$"</query>
+        </search>
+        <option name="count">10</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">20</option>
+        <option name="rowNumbers">0</option>
+        <option name="table.wrap">1</option>
+        <option name="type">list</option>
+        <fields>[]</fields>
+      </event>
+    </panel>
+  </row>
+</form>

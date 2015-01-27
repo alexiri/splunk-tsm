@@ -1,0 +1,100 @@
+<dashboard>
+ <label>Druid Health</label>
+ <description>Vitalstatistix, making sure everything runs correctly</description>
+
+ <searchTemplate><![CDATA[
+    | inputlookup serverinfo | search SERVER_STATUS!=retired
+        | appendcols [| rest /services/data/indexes | search assureUTF8=0 "eai:acl.app"=druid_utils | fields title | eval recent_{title}=0 | eval count_{title}=0 | stats sum(recent_*) AS recent_* sum(count_*) AS count_*]
+        | streamstats sum(recent_*) AS recent_* sum(count_*) AS count_*
+    | join type=outer max=0 HOST
+        [| rest /services/data/indexes | search assureUTF8=0 "eai:acl.app"=druid_utils
+         | map search="| metadata index=$$title$$ type=hosts | rename host AS HOST recentTime AS recent_$$title$$ totalCount AS count_$$title$$ | eval indexes=\"$$title$$\"
+         | fields HOST recent_* count_*"]
+    | stats first(TSMSERVER) AS TSMSERVER sum(recent_*) AS recent_* sum(count_*) AS count_* by HOST
+    | rename HOST AS Host TSMSERVER AS "TSM Server"
+ ]]></searchTemplate>
+ <earliestTime>0</earliestTime>
+
+ <row>
+   <panel>
+     <title>Latest Events by Index</title>
+     <table id="druid_health_latest">
+       <searchPostProcess><![CDATA[
+        fields "TSM Server" Host recent_tsmdb recent_tsmlogs recent_lemon recent_tsm-accnt
+        | foreach recent_* [eval "<<MATCHSTR>>"=if('<<FIELD>>'>0, strftime('<<FIELD>>', "%F %T"), "") ]
+        | fields - count_* recent_*
+        | sort Host
+        | table "TSM Server" Host *
+       ]]></searchPostProcess>
+       <option name="drilldown">none</option>
+       <option name="rowNumbers">true</option>
+       <option name="count">35</option>
+     </table>
+   </panel>
+   <panel>
+     <title>Real-time events for all indexes</title>
+     <table id="druid_health_realtime">
+       <searchString>index=*
+        | stats sparkline(count) AS Frequency latest(_time) AS "Latest event" by host
+        | eval "Latest event"=strftime('Latest event', "%F %T")
+        | rename host AS Host
+        | sort Host
+       </searchString>
+       <earliestTime>rt-30m</earliestTime>
+       <latestTime>rt</latestTime>
+       <option name="drilldown">none</option>
+       <option name="rowNumbers">true</option>
+       <option name="count">35</option>
+     </table>
+   </panel>
+ </row>
+
+ <row>
+   <panel>
+     <title>Latest TSMDB Events by Type and Host</title>
+     <table id="druid_health_lastsourcetype">
+       <searchString><![CDATA[
+         index=tsmdb
+         | stats latest(_time) AS l by sourcetype tsmserver
+         | chart limit=0 last(l) over sourcetype by tsmserver
+         | join type=outer sourcetype [
+           | inputlookup tsmdb
+           | search frequency!=NEVER
+           | eval sourcetype=internal_name+"-"+version
+           | fields sourcetype frequency name
+         ]
+         | stats first(frequency) AS Frequency max(TSM*) AS TSM* by name
+         | foreach TSM* [eval "TSM<<MATCHSTR>>"=Frequency+":"+if(isnotnull(<<FIELD>>), <<FIELD>>, "")]
+         | rename name AS Type
+         | sort Type
+         | table Type Frequency *
+       ]]></searchString>
+       <earliestTime>@d+8h</earliestTime>
+       <latestTime>now</latestTime>
+       <option name="drilldown">none</option>
+       <option name="rowNumbers">true</option>
+       <option name="count">50</option>
+     </table>
+   </panel>
+ </row>
+
+ <row>
+   <panel>
+     <title>Total Events by Index</title>
+     <table id="druid_health_count">
+       <searchPostProcess><![CDATA[
+         fields - count_alerts
+         | foreach count_* [rename <<FIELD>> AS "<<MATCHSTR>>"]
+         | fields - recent_*
+         | sort Host
+         | table "TSM Server" Host *
+         | addcoltotals label="Totals" labelfield="TSM Server"
+       ]]></searchPostProcess>
+       <option name="drilldown">none</option>
+       <option name="rowNumbers">true</option>
+       <option name="count">35</option>
+     </table>
+   </panel>
+ </row>
+
+</dashboard>

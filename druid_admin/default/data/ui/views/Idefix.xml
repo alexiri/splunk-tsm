@@ -1,0 +1,120 @@
+<dashboard>
+ <label>Errors by severity</label>
+ <description>Idefix, digging up errors</description>
+ <searchTemplate>
+     index=tsmlogs (tsmcode=ANR*E OR tsmcode=ANR*W)
+     | lookup tsmcode-alerts tsmcode as tsmcode OUTPUT alert as alert
+     | eval alert=if(isnull(alert), "other", alert)
+     | search alert!=ignore
+     | stats sparkline count latest(_raw) as raw latest(_time) as last_occurrence earliest(_time) as first_occurrence by tsmserver, tsmcode, alert
+     | rename count as "Number of occurrences"
+     | eval time_span=last_occurrence-first_occurrence
+     | eval hours_span=floor(time_span/3600)
+     | eval mins_span=floor((time_span%3600)/60)
+     | eval mins_span=if(mins_span&lt;10, "0".mins_span, mins_span)
+     | eval secs_span=time_span%60
+     | eval secs_span=if(secs_span&lt;10, "0".secs_span, secs_span)
+     | eval time_span=hours_span.":".mins_span.":".secs_span
+     | convert timeformat="%b %d, %Y at %H:%M:%S" ctime(first_occurrence)
+     | convert timeformat="%b %d, %Y at %H:%M:%S" ctime(last_occurrence)
+     | rex field=raw "AN[A-Z]\d{1,5}[A-Z]\s(?&lt;latest_message&gt;.*)"
+     | eval latest_message=substr(latest_message, 1, 200)
+     | rename sparkline as "Behaviour", time_span as "Duration", first_occurrence as "First occurrence", last_occurrence as "Last occurrence", tsmserver as "TSM Server", tsmcode as "Error Code", latest_message as "Latest message"
+     | fields alert, "First occurrence", "Last occurrence", "Duration", "Number of occurrences", "Behaviour", "TSM Server", "Error Code", "Latest message"
+ </searchTemplate>
+ <earliestTime>rt-24h</earliestTime>
+ <latestTime>rt</latestTime>
+ <row grouping="7">
+
+  <table>
+   <title>Critical Errors</title>
+   <searchPostProcess>
+     where alert="critical"
+     | table "First occurrence", "Last occurrence", "Duration", "Number of occurrences", "Behaviour", "TSM Server", "Error Code", "Latest message"
+     | appendpipe
+         [ stats count
+         | eval "TSM Server"="No critical errors found"
+         | where count==0 ]
+     | sort - "Last occurrence" "Number of occurrences"
+   </searchPostProcess>
+   <option name="drilldown">row</option>
+   <option name="count">300</option>
+   <drilldown>
+    <link>Obelix?form.tsmserver=$row.TSM Server$</link>
+   </drilldown>
+  </table>
+
+  <table>
+   <title>High Severity Errors</title>
+   <searchPostProcess>
+     where alert="high"
+     | table "First occurrence", "Last occurrence", "Duration", "Number of occurrences", "Behaviour", "TSM Server", "Error Code", "Latest message"
+     | appendpipe
+         [ stats count
+         | eval "TSM Server"="No high severity errors found"
+         | where count==0 ]
+     | sort - "Last occurrence" "Number of occurrences"
+   </searchPostProcess>
+   <option name="drilldown">row</option>
+   <option name="count">300</option>
+   <drilldown>
+    <link>Obelix?form.tsmserver=$row.TSM Server$</link>
+   </drilldown>
+  </table>
+
+  <table>
+   <title>Medium Severity Errors</title>
+   <searchPostProcess>
+     where alert="medium"
+     | table "First occurrence", "Last occurrence", "Duration", "Number of occurrences", "Behaviour", "TSM Server", "Error Code", "Latest message"
+     | appendpipe
+         [ stats count
+         | eval "TSM Server"="No medium severity errors found"
+         | where count==0 ]
+     | sort - "Last occurrence" "Number of occurrences"
+   </searchPostProcess>
+   <option name="drilldown">row</option>
+   <option name="count">300</option>
+   <drilldown>
+    <link>Obelix?form.tsmserver=$row.TSM Server$</link>
+   </drilldown>
+  </table>
+
+  <table>
+   <title>Low Severity Errors</title>
+   <searchPostProcess>
+     where alert="low"
+     | table "First occurrence", "Last occurrence", "Duration", "Number of occurrences", "Behaviour", "TSM Server", "Error Code", "Latest message"
+     | appendpipe
+         [ stats count
+         | eval "TSM Server"="No low severity errors found"
+         | where count==0 ]
+     | sort - "Last occurrence" "Number of occurrences"
+   </searchPostProcess>
+   <option name="drilldown">row</option>
+   <option name="count">300</option>
+   <drilldown>
+    <link>Obelix?form.tsmserver=$row.TSM Server$</link>
+   </drilldown>
+  </table>
+
+  <table>
+   <title>Uncategorized Errors</title>
+   <searchPostProcess>
+     where alert="other"
+     | table "First occurrence", "Last occurrence", "Duration", "Number of occurrences", "Behaviour", "TSM Server", "Error Code", "Latest message"
+     | appendpipe
+         [ stats count
+         | eval "TSM Server"="No other errors found"
+         | where count==0 ]
+     | sort - "Last occurrence" "Number of occurrences"
+   </searchPostProcess>
+   <option name="drilldown">row</option>
+   <option name="count">300</option>
+   <drilldown>
+    <link>Obelix?form.tsmserver=$row.TSM Server$</link>
+   </drilldown>
+  </table>
+
+ </row>
+</dashboard>

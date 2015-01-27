@@ -1,0 +1,249 @@
+<form>
+  <label>Total Data</label>
+  <searchTemplate>
+    <![CDATA[
+    `daily_occupancy_stats_macro`
+    | search $department$ $group$ $contact$
+    | eventstats dc(contact_dept) AS depts dc(contact_group) AS groups
+    | eval joiner=case(depts>4 OR groups>10, contact_dept, depts>1, contact_dept+"-"+contact_group, depts>0 AND groups>1, contact_group, groups>0, CONTACT)
+    | stats sum(reporting_mb) AS reporting_mb sum(num_files) AS num_files by _time,type,joiner
+    | eval reporting_mb=reporting_mb / case("$unit$"=="Megabytes", 1, "$unit$"=="Gigabytes", 1024, "$unit$"=="Terabytes", 1024*1024, "$unit$"=="Petabytes", 1024*1024*1024)
+    | eval type=case(type="Bkup", "Backup", type="Arch", "Archive", type!="", type)
+  ]]>
+  </searchTemplate>
+  <earliestTime>$time.earliest$</earliestTime>
+  <latestTime>$time.latest$</latestTime>
+  <fieldset submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label/>
+      <default>
+        <earliestTime>-30d@d</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="dropdown" token="unit" searchWhenChanged="true">
+      <label>Units</label>
+      <choice value="Megabytes">Megabytes</choice>
+      <choice value="Gigabytes">Gigabytes</choice>
+      <choice value="Terabytes">Terabytes</choice>
+      <choice value="Petabytes">Petabytes</choice>
+      <default>Petabytes</default>
+    </input>
+    <input type="multiselect" token="department" searchWhenChanged="true">
+      <label>Department</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="contact_dept" fieldForValue="contact_dept">| inputlookup contactinfo | dedup contact_dept | sort contact_dept</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>contact_dept="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="multiselect" token="group" searchWhenChanged="true">
+      <label>Group</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch fieldForLabel="contact_group" fieldForValue="contact_group">| inputlookup contactinfo | search $department$ | dedup contact_group | sort contact_group</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>contact_group="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="multiselect" token="contact" searchWhenChanged="true">
+      <label>Contact</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch fieldForLabel="contact" fieldForValue="contact">| inputlookup contactinfo | search $department$ $group$ | dedup contact | sort contact</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>CONTACT="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Total Data</title>
+      <single>
+        <searchPostProcess>where type="Backup"
+            | append [| stats count | eval _time=0 | eval type="Backup" | eval reporting_mb=0 | fields - count]
+            | stats sum(reporting_mb) AS reporting_mb by _time
+            | stats latest(reporting_mb) AS reporting_mb
+            | eval reporting_mb=tostring(reporting_mb, "commas")
+        </searchPostProcess>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="underLabel">Backup</option>
+        <option name="afterLabel">$unit$</option>
+      </single>
+      <single>
+        <searchPostProcess>where type="Archive"
+            | append [| stats count | eval _time=0 | eval type="Archive" | eval reporting_mb=0 | fields - count]
+            | stats sum(reporting_mb) AS reporting_mb by _time
+            | stats latest(reporting_mb) AS reporting_mb
+            | eval reporting_mb=tostring(reporting_mb, "commas")
+        </searchPostProcess>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="underLabel">Archive</option>
+        <option name="afterLabel">$unit$</option>
+      </single>
+      <single>
+        <searchPostProcess>append [| stats count | eval _time=0 | eval type="Archive" | eval reporting_mb=0 | fields - count]
+            | stats sum(reporting_mb) AS reporting_mb by _time
+            | stats latest(reporting_mb) AS reporting_mb
+            | eval reporting_mb=tostring(reporting_mb, "commas")
+        </searchPostProcess>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="underLabel">Total</option>
+        <option name="afterLabel">$unit$</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Number of Files</title>
+      <single>
+        <searchPostProcess>where type="Backup"
+            | append [| stats count | eval _time=0 | eval type="Backup" | eval num_files=0 | fields - count]
+            | stats sum(num_files) AS num_files by _time
+            | stats latest(num_files) AS num_files
+            | eval num_files=tostring(num_files, "commas")
+        </searchPostProcess>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="underLabel">Backup</option>
+      </single>
+      <single>
+        <searchPostProcess>where type="Archive"
+            | append [| stats count | eval _time=0 | eval type="Archive" | eval num_files=0 | fields - count]
+            | stats sum(num_files) AS num_files by _time
+            | stats latest(num_files) AS num_files
+            | eval num_files=tostring(num_files, "commas")
+        </searchPostProcess>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="underLabel">Archive</option>
+      </single>
+      <single>
+        <searchPostProcess>append [| stats count | eval _time=0 | eval type="Archive" | eval num_files=0 | fields - count]
+            | stats sum(num_files) AS num_files by _time
+            | stats latest(num_files) AS num_files
+            | eval num_files=tostring(num_files, "commas")
+        </searchPostProcess>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="underLabel">Total</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Total Data</title>
+      <chart>
+        <searchPostProcess>timechart span=1d sum(reporting_mb) AS reporting_mb by type</searchPostProcess>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">$unit$</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Breakdown</title>
+      <chart>
+        <searchPostProcess>stats latest(reporting_mb) AS reporting_mb by joiner
+            | rename joiner AS "Dept/Group/Contact"
+        </searchPostProcess>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.chart.showPercent">ellipsisMiddle</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Projected Growth</title>
+      <chart>
+        <searchPostProcess><![CDATA[
+            timechart span=1d sum(reporting_mb) AS "Total Data"
+            | predict "Total Data" algorithm=LLT future_timespan=366
+            | eval "prediction(Total Data)"=if('prediction(Total Data)'<0, null, 'prediction(Total Data)')
+            | eval "lower95(prediction(Total Data))"=if('lower95(prediction(Total Data))'<0, null, 'lower95(prediction(Total Data))')
+            | eval "upper95(prediction(Total Data))"=if('upper95(prediction(Total Data))'<0, null, 'upper95(prediction(Total Data))')
+            | search "Total Data"!=0 OR "upper95(prediction(Total Data))"!=0
+        ]]></searchPostProcess>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">$unit$</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Number of Files</title>
+      <chart>
+        <searchPostProcess>timechart span=1d sum(num_files) AS num_files by type</searchPostProcess>
+        <earliestTime>$time.earliest$</earliestTime>
+        <latestTime>$time.latest$</latestTime>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Number of Files</option>
+      </chart>
+    </panel>
+  </row>
+</form>

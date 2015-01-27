@@ -1,0 +1,74 @@
+<form>
+  <label>Tape Drive Status</label>
+  <description>Asuranceturix, annoying the TSM admins</description>
+  <row>
+    <panel>
+      <title>Drive Status TSMLIB0</title>
+      <table id="drive_status_lib0">
+        <searchString>| `drive_status("TSMLIB0")`</searchString>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="count">35</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Drive Status IBMLIB2</title>
+      <table id="drive_status_lib2">
+        <searchString>| `drive_status("IBMLIB2")`</searchString>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="count">35</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Drive Utilization TSMLIB0</title>
+      <input type="time" token="time1" searchWhenChanged="true">
+        <label/>
+        <default>Last 72 hours</default>
+      </input>
+      <chart>
+        <searchString>`tsmdb("drives")` ONLINE=YES VOLUME_NAME!="" LIBRARY_NAME=TSMLIB0 | bin span=5m _time | stats count by _time | timechart avg(count) minspan=5m</searchString>
+        <earliestTime>$time1.earliest$</earliestTime>
+        <latestTime>$time1.latest$</latestTime>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Drives</option>
+        <option name="charting.axisLabelsY.majorUnit">4</option>
+        <option name="charting.axisY.maximumNumber">24</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Drive Utilization IBMLIB2</title>
+      <input type="time" token="time2" searchWhenChanged="true">
+        <label/>
+        <default>Last 72 hours</default>
+      </input>
+      <chart>
+        <searchString>`tsmdb("drives")` ONLINE=YES VOLUME_NAME!="" LIBRARY_NAME=IBMLIB2 | bin span=5m _time | stats count by _time | timechart avg(count) minspan=5m</searchString>
+        <earliestTime>$time2.earliest$</earliestTime>
+        <latestTime>$time2.latest$</latestTime>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Drives</option>
+        <option name="charting.axisLabelsY.majorUnit">5</option>
+        <option name="charting.axisY.maximumNumber">30</option>
+      </chart>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,165 @@
+<form>
+  <label>Node Data</label>
+  <searchTemplate>
+    <![CDATA[
+    tsmserver=$tsmserver$ NODE_NAME=$NODE_NAME$ `daily_occupancy_stats_macro`
+    | stats sum(reporting_mb) AS reporting_mb sum(num_files) AS num_files by _time,type
+    | eval reporting_mb=reporting_mb / case("$unit$"=="Megabytes", 1, "$unit$"=="Gigabytes", 1024, "$unit$"=="Terabytes", 1024*1024, "$unit$"=="Petabytes", 1024*1024*1024)
+    | eval type=if(type=="Bkup", "Backup", "Archive")
+  ]]>
+  </searchTemplate>
+  <earliestTime>$time.earliest$</earliestTime>
+  <latestTime>$time.latest$</latestTime>
+  <fieldset autoRun="True" submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label/>
+      <default>
+        <earliestTime>-1y</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="dropdown" token="tsmserver" searchWhenChanged="true">
+      <label>TSM server</label>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="tsmserver" fieldForValue="tsmserver">| inputlookup nodeinfo | dedup tsmserver</populatingSearch>
+    </input>
+    <input type="dropdown" token="NODE_NAME" searchWhenChanged="True">
+      <label>Node name</label>
+      <populatingSearch fieldForValue="NODE_NAME" fieldForLabel="NODE_NAME">
+        <![CDATA[| inputlookup nodeinfo | search tsmserver=$tsmserver$]]>
+      </populatingSearch>
+    </input>
+  </fieldset>
+  <row>
+    <html src="node_navbar.html"/>
+  </row>
+  <row>
+    <panel>
+      <title>Total Data</title>
+      <input type="dropdown" token="unit" searchWhenChanged="true">
+        <label>Units</label>
+        <choice value="Megabytes">Megabytes</choice>
+        <choice value="Gigabytes">Gigabytes</choice>
+        <choice value="Terabytes">Terabytes</choice>
+        <choice value="Petabytes">Petabytes</choice>
+        <default>Gigabytes</default>
+      </input>
+      <chart>
+        <searchPostProcess>timechart span=1d avg(reporting_mb) AS reporting_mb by type</searchPostProcess>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">$unit$</option>
+      </chart>
+      <single>
+        <searchPostProcess>search type=Backup
+          | append [| stats count | eval _time=0 | eval type="Backup" | eval reporting_mb=0 | fields - count]
+          | stats latest(reporting_mb) AS reporting_mb
+          | eval reporting_mb=tostring(round(reporting_mb, 2), "commas")
+        </searchPostProcess>
+        <option name="field">reporting_mb</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Backup</option>
+        <option name="afterLabel">$unit$</option>
+      </single>
+      <single>
+        <searchPostProcess>search type=Archive
+          | append [| stats count | eval _time=0 | eval type="Archive" | eval reporting_mb=0 | fields - count]
+          | stats latest(reporting_mb) AS reporting_mb
+          | eval reporting_mb=tostring(round(reporting_mb, 2), "commas")
+        </searchPostProcess>
+        <option name="field">reporting_mb</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Archive</option>
+        <option name="afterLabel">$unit$</option>
+      </single>
+      <single>
+        <searchPostProcess>append [| stats count | eval _time=0 | eval type="Archive" | eval reporting_mb=0 | fields - count]
+          | stats sum(reporting_mb) AS reporting_mb by _time
+          | stats latest(reporting_mb) AS reporting_mb
+          | eval reporting_mb=tostring(round(reporting_mb, 2), "commas")
+        </searchPostProcess>
+        <option name="field">reporting_mb</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Total</option>
+        <option name="afterLabel">$unit$</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Number of files</title>
+      <chart>
+        <searchPostProcess>timechart span=1d avg(num_files) AS num_files by type</searchPostProcess>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">files</option>
+      </chart>
+      <single>
+        <searchPostProcess>search type=Backup
+          | append [| stats count | eval _time=0 | eval type="Backup" | eval num_files=0 | fields - count]
+          | stats latest(num_files) AS num_files
+          | eval num_files=tostring(num_files, "commas")
+        </searchPostProcess>
+        <option name="field">num_files</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Backup</option>
+        <option name="afterLabel">files</option>
+      </single>
+      <single>
+        <searchPostProcess>search type=Archive
+          | append [| stats count | eval _time=0 | eval type="Archive" | eval num_files=0 | fields - count]
+          | stats latest(num_files) AS num_files
+          | eval num_files=tostring(num_files, "commas")
+        </searchPostProcess>
+        <option name="field">num_files</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Archive</option>
+        <option name="afterLabel">files</option>
+      </single>
+      <single>
+        <searchPostProcess>append [| stats count | eval _time=0 | eval type="Archive" | eval num_files=0 | fields - count]
+          | stats sum(num_files) AS num_files by _time
+          | stats latest(num_files) AS num_files
+          | eval num_files=tostring(num_files, "commas")
+        </searchPostProcess>
+        <option name="field">num_files</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Total</option>
+        <option name="afterLabel">files</option>
+      </single>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,83 @@
+<form>
+  <label>Tape Supply</label>
+  <description/>
+  <row>
+    <panel>
+      <title>Library Capacity of TSMLIB0 in TB</title>
+      <chart>
+        <searchString>| inputlookup tapevolumeinfo | search LIBRARY_NAME="TSMLIB0" | stats sum(EST_CAPACITY_MB) AS EST_CAPACITY_MB sum(USED_MB) AS USED_MB by LIBRARY_NAME | eval EST_CAPACITY_TB=EST_CAPACITY_MB/1024/1024 | eval USED_TB=round(USED_MB/1024/1024, 0) | eval seventyfive=EST_CAPACITY_TB*.75 | eval eightyfive=EST_CAPACITY_TB*.85 | eval ninetyfive=EST_CAPACITY_TB*.95 | gauge USED_TB 0 seventyfive eightyfive ninetyfive capacity_tb</searchString>
+        <option name="charting.chart">fillerGauge</option>
+        <option name="charting.chart.style">shiny</option>
+      </chart>
+    </panel>
+
+    <panel>
+      <title>Free Scratch Tapes</title>
+      <single>
+        <title>TSMLIB0</title>
+        <searchString>STATUS=Scratch LIBRARY_NAME="TSMLIB0" `lastdb("libvolumes")` | stats count by LIBRARY_NAME | rangemap field=count low=200-100000 elevated=100-200 severe=0-100 default=low</searchString>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+        <option name="field">count</option>
+        <option name="classField">range</option>
+        <option name="underLabel">scratch tapes</option>
+      </single>
+      <single>
+        <title>IBMLIB2</title>
+        <searchString>STATUS=Scratch LIBRARY_NAME="IBMLIB2" `lastdb("libvolumes")` | stats count by LIBRARY_NAME | rangemap field=count low=200-100000 elevated=100-200 severe=0-100 default=low</searchString>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+        <option name="field">count</option>
+        <option name="classField">range</option>
+        <option name="underLabel">scratch tapes</option>
+      </single>
+    </panel>
+
+    <panel>
+      <title>Library Capacity of IBMLIB2 in TB</title>
+      <chart>
+        <searchString>| inputlookup tapevolumeinfo | search LIBRARY_NAME="IBMLIB2" | stats sum(EST_CAPACITY_MB) AS EST_CAPACITY_MB sum(USED_MB) AS USED_MB by LIBRARY_NAME | eval EST_CAPACITY_TB=EST_CAPACITY_MB/1024/1024 | eval USED_TB=round(USED_MB/1024/1024, 0) | eval seventyfive=EST_CAPACITY_TB*.75 | eval eightyfive=EST_CAPACITY_TB*.85 | eval ninetyfive=EST_CAPACITY_TB*.95 | gauge USED_TB 0 seventyfive eightyfive ninetyfive capacity_tb</searchString>
+        <option name="charting.chart">fillerGauge</option>
+        <option name="charting.chart.style">shiny</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Free scratch tapes in TSMLIB0</title>
+      <input type="time" token="time1" searchWhenChanged="true">
+        <label/>
+        <default>Last 30 days</default>
+      </input>
+      <chart>
+        <searchString>`tsmdb("libvolumes")` STATUS=Scratch LIBRARY_NAME=TSMLIB0 | timechart span=1h dc(VOLUME_NAME) AS Scratch</searchString>
+        <earliestTime>$time1.earliest$</earliestTime>
+        <latestTime>$time1.latest$</latestTime>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Tapes</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Free scratch tapes in IBMLIB2</title>
+      <input type="time" token="time2" searchWhenChanged="true">
+        <label/>
+        <default>Last 30 days</default>
+      </input>
+      <chart>
+        <searchString>`tsmdb("libvolumes")` STATUS=Scratch LIBRARY_NAME=IBMLIB2 | timechart span=1h dc(VOLUME_NAME) AS Scratch</searchString>
+        <earliestTime>$time2.earliest$</earliestTime>
+        <latestTime>$time2.latest$</latestTime>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Tapes</option>
+      </chart>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,49 @@
+<dashboard>
+  <label>C5 Statistics</label>
+  <row>
+    <panel>
+      <title>Service Level Report (today vs. same day last week)</title>
+      <table>
+        <searchString>earliest=@d latest=now `daily_occupancy_stats_macro` | stats sum(num_files) AS total_files sum(reporting_mb) AS total_mb by _time | appendcols [search earliest=-8d@d latest=-7d@d `daily_occupancy_stats_macro` | stats sum(num_files) AS total_files_lw sum(reporting_mb) AS total_mb_lw by _time] | eval total_files_delta=total_files-total_files_lw | eval total_mb_delta=total_mb-total_mb_lw | `format("Files (B)", total_files/1000000000)` | `format("Files delta (M)", total_files_delta/1000000)` | `format("Files delta (%)", 100*(total_files/total_files_lw-1), "%")` | `format("Size (PB)", total_mb/1024/1024/1024)` | `format("Size delta (TB)", total_mb_delta/1024/1024)` | `format("Size delta (%)", 100*(total_mb/total_mb_lw-1), "%")` | table "Files (B)" "Files delta (M)" "Files delta (%)" "Size (PB)" "Size delta (TB)" "Size delta (%)"</searchString>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </table>
+    </panel>
+    <panel>
+      <title>Breakdown by group (today vs. same day last week)</title>
+      <table>
+        <searchString>earliest=@d latest=now `daily_occupancy_stats_macro` | eval Group=if(contact_dept!="", contact_dept . if(contact_group!="", "-" . contact_group, ""), "&lt;others&gt;") | stats sum(num_files) AS total_files sum(reporting_mb) AS total_mb by _time,Group | appendcols [search earliest=-8d@d latest=-7d@d `daily_occupancy_stats_macro` | eval Group=if(contact_dept!="", contact_dept . if(contact_group!="", "-" . contact_group, ""), "&lt;others&gt;") | stats sum(num_files) AS total_files_lw sum(reporting_mb) AS total_mb_lw by _time,Group] | eval total_files_delta=total_files-total_files_lw | eval total_mb_delta=total_mb-total_mb_lw | `format("Files (M)", total_files/1000000)` | `format("Files delta (M)", total_files_delta/1000000)` | `format("Files delta (%)", 100*(total_files/total_files_lw-1), "%")` | `format("Size (TB)", total_mb/1024/1024)` | `format("Size delta (GB)", total_mb_delta/1024, "")` | `format("Size delta (%)", 100*(total_mb/total_mb_lw-1), "%")` | sort by -total_mb | table Group "Files (M)" "Files delta (M)" "Files delta (%)" "Size (TB)" "Size delta (GB)" "Size delta (%)"</searchString>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">20</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Service Level Report (today vs. same day last year)</title>
+      <table>
+        <searchString>earliest=@d latest=now `daily_occupancy_stats_macro` | stats sum(num_files) AS total_files sum(reporting_mb) AS total_mb by _time | appendcols [search earliest=-366d@d latest=-365d@d `daily_occupancy_stats_macro` | stats sum(num_files) AS total_files_lw sum(reporting_mb) AS total_mb_lw by _time] | eval total_files_delta=total_files-total_files_lw | eval total_mb_delta=total_mb-total_mb_lw | `format("Files (B)", total_files/1000000000)` | `format("Files delta (M)", total_files_delta/1000000)` | `format("Files delta (%)", 100*(total_files/total_files_lw-1), "%")` | `format("Size (PB)", total_mb/1024/1024/1024)` | `format("Size delta (TB)", total_mb_delta/1024/1024)` | `format("Size delta (%)", 100*(total_mb/total_mb_lw-1), "%")` | table "Files (B)" "Files delta (M)" "Files delta (%)" "Size (PB)" "Size delta (TB)" "Size delta (%)"</searchString>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </table>
+    </panel>
+    <panel>
+      <title>Breakdown by group (today vs. same day last year)</title>
+      <table>
+        <searchString>earliest=@d latest=now `daily_occupancy_stats_macro` | eval Group=if(contact_dept!="", contact_dept . if(contact_group!="", "-" . contact_group, ""), "&lt;others&gt;") | stats sum(num_files) AS total_files sum(reporting_mb) AS total_mb by _time,Group | appendcols [search earliest=-366d@d latest=-365d@d `daily_occupancy_stats_macro` | eval Group=if(contact_dept!="", contact_dept . if(contact_group!="", "-" . contact_group, ""), "&lt;others&gt;") | stats sum(num_files) AS total_files_lw sum(reporting_mb) AS total_mb_lw by _time,Group] | eval total_files_delta=total_files-total_files_lw | eval total_mb_delta=total_mb-total_mb_lw | `format("Files (M)", total_files/1000000)` | `format("Files delta (M)", total_files_delta/1000000)` | `format("Files delta (%)", 100*(total_files/total_files_lw-1), "%")` | `format("Size (TB)", total_mb/1024/1024)` | `format("Size delta (GB)", total_mb_delta/1024, "")` | `format("Size delta (%)", 100*(total_mb/total_mb_lw-1), "%")` | sort by -total_mb | table Group "Files (M)" "Files delta (M)" "Files delta (%)" "Size (TB)" "Size delta (GB)" "Size delta (%)"</searchString>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">20</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

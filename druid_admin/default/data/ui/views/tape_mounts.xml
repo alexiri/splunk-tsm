@@ -1,0 +1,85 @@
+<form>
+ <label>Tape Mounts</label>
+ <description></description>
+ <fieldset autoRun="true" submitButton="false">
+  <input type="time" token="time" searchWhenChanged="true">
+    <label></label>
+    <default>Last 48 hours</default>
+  </input>
+ </fieldset>
+
+ <row>
+  <panel>
+   <title>Tape mounts TSMLIB0</title>
+   <html>
+     <div id="mounts-search-lib0"
+         class="splunk-manager"
+         data-require="splunkjs/mvc/searchmanager"
+         data-options='{
+             "search": "tapelibrary=TSMLIB0 `gantt_mounts`",
+             "earliest_time": { "type": "token_safe", "value": "$$time.earliest$$" },
+             "latest_time": { "type": "token_safe", "value": "$$time.latest$$" },
+             "cancelOnUnload": true,
+             "preview": true
+         }'>
+     </div>
+
+     <div id="mounts-view-lib0"
+         class="splunk-view"
+         data-require="app/gantt/components/gantt/gantt"
+         data-options='{
+            "managerid": "mounts-search-lib0",
+            "startField": "_time",
+            "durationField": "duration",
+            "categoryLabel": "Tape Drive",
+            "categoryField": "tapedrive",
+            "categorySearch": "|inputlookup driveinfo | search LIBRARY_NAME=TSMLIB0 | rename DRIVE_NAME AS tapedrive | fields tapedrive",
+            "seriesLabel": "TSM Server",
+            "seriesField": "tsmserver",
+            "highlightField": "tapevolume",
+            "drilldownSearch": "search index=tsmlogs tsmserver=$tsmserver$ session=$session$",
+            "extrasField": "extras"
+         }'>
+     </div>
+   </html>
+  </panel>
+ </row>
+
+ <row>
+  <panel>
+   <title>Tape mounts IBMLIB2</title>
+   <html>
+     <div id="mounts-search-lib2"
+         class="splunk-manager"
+         data-require="splunkjs/mvc/searchmanager"
+         data-options='{
+             "search": "tapelibrary=IBMLIB2 `gantt_mounts`",
+             "earliest_time": { "type": "token_safe", "value": "$$time.earliest$$" },
+             "latest_time": { "type": "token_safe", "value": "$$time.latest$$" },
+             "cancelOnUnload": true,
+             "preview": true
+         }'>
+     </div>
+
+     <div id="mounts-view-lib2"
+         class="splunk-view"
+         data-require="app/gantt/components/gantt/gantt"
+         data-options='{
+            "managerid": "mounts-search-lib2",
+            "startField": "_time",
+            "durationField": "duration",
+            "categoryLabel": "Tape Drive",
+            "categoryField": "tapedrive",
+            "categorySearch": "|inputlookup driveinfo | search LIBRARY_NAME=IBMLIB2 | rename DRIVE_NAME AS tapedrive | fields tapedrive",
+            "seriesLabel": "TSM Server",
+            "seriesField": "tsmserver",
+            "highlightField": "tapevolume",
+            "drilldownSearch": "search index=tsmlogs tsmserver=$tsmserver$ session=$session$",
+            "extrasField": "extras"
+         }'>
+     </div>
+   </html>
+  </panel>
+ </row>
+
+</form>

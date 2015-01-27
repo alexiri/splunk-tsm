@@ -1,0 +1,138 @@
+<form>
+ <label>Drive troubleshooting</label>
+ <description></description>
+ <fieldset autoRun="true" submitButton="false">
+  <input type="time" token="time" searchWhenChanged="true">
+    <label></label>
+    <default>Last 48 hours</default>
+  </input>
+  <input type="dropdown" token="drive" searchWhenChanged="true">
+   <label>Tape drive:</label>
+   <search>
+       <query>| inputlookup driveinfo | sort DRIVE_NAME</query>
+   </search>
+   <fieldForLabel>DRIVE_NAME</fieldForLabel>
+   <fieldForValue>DRIVE_NAME</fieldForValue>
+  </input>
+  <input type="text" token="filter" searchWhenChanged="true">
+    <label>Search filter:</label>
+    <default></default>
+  </input>
+ </fieldset>
+
+ <row>
+  <panel>
+   <title>Drive Information</title>
+   <table>
+     <search>
+       <query>DRIVE_NAME="$drive$" `lastdb("drives")` | table LIBRARY_NAME DRIVE_SERIAL ELEMENT ONLINE DRIVE_STATE ALLOCATED_TO VOLUME_NAME</query>
+       <earliest>$time.earliest$</earliest>
+       <latest>$time.latest$</latest>
+     </search>
+     <drilldown>off</drilldown>
+   </table>
+  </panel>
+ </row>
+
+ <row>
+  <panel>
+   <title>Path Information</title>
+   <table id="table_path">
+     <search>
+       <query>DESTINATION_NAME="$drive$" `lastdb("paths")` | table SOURCE_NAME ONLINE LIBRARY_NAME DEVICE | sort ONLINE SOURCE_NAME</query>
+       <earliest>$time.earliest$</earliest>
+       <latest>$time.latest$</latest>
+     </search>
+     <drilldown>off</drilldown>
+  </table>
+  </panel>
+ </row>
+
+ <row>
+  <panel>
+   <title>Log messages</title>
+   <event>
+     <search>
+       <query>index=tsmlogs tapedrive="$drive$" $filter$</query>
+       <earliest>$time.earliest$</earliest>
+       <latest>$time.latest$</latest>
+     </search>
+   </event>
+  </panel>
+ </row>
+
+ <row>
+  <panel>
+   <title>Tape mounts</title>
+   <html>
+     <div id="mounts-search"
+         class="splunk-manager"
+         data-require="splunkjs/mvc/searchmanager"
+         data-options='{
+             "search": { "type": "token_safe", "value": "tapedrive=\"$$drive$$\" $$filter$$ `gantt_mounts`" },
+             "earliest_time": { "type": "token_safe", "value": "$$time.earliest$$" },
+             "latest_time": { "type": "token_safe", "value": "$$time.latest$$" },
+             "cancelOnUnload": true,
+             "preview": true
+         }'>
+     </div>
+
+     <div id="mounts-view"
+         class="splunk-view"
+         data-require="app/gantt/components/gantt/gantt"
+         data-options='{
+            "managerid": "mounts-search",
+            "startField": "_time",
+            "durationField": "duration",
+            "categoryLabel": "",
+            "categoryField": "tapedrive",
+            "seriesLabel": "TSM Server",
+            "seriesField": "tsmserver",
+            "extrasField": "extras"
+         }'>
+     </div>
+   </html>
+  </panel>
+ </row>
+
+ <row>
+  <panel>
+   <title>Drive Speed</title>
+   <chart>
+     <search>
+       <query>index=fcsmon [| inputlookup driveinfo | search DRIVE_NAME="$drive$" | makemv DRIVE_WWNS | mvexpand DRIVE_WWNS | rename DRIVE_WWNS AS port_wwn | fields port_wwn]
+         | stats sum(in_speed_kb) AS in_speed_kb sum(out_speed_kb) AS out_speed_kb by _time
+         | eval in_speed_mb=in_speed_kb/1024
+         | eval out_speed_mb=out_speed_kb/1024
+         | timechart minspan=5m avg(in_speed_mb) AS Input avg(out_speed_mb) AS Output
+       </query>
+       <earliest>$time.earliest$</earliest>
+       <latest>$time.latest$</latest>
+     </search>
+     <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+     <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+     <option name="charting.axisTitleX.visibility">visible</option>
+     <option name="charting.axisTitleY.visibility">visible</option>
+     <option name="charting.axisTitleY2.visibility">visible</option>
+     <option name="charting.axisX.scale">linear</option>
+     <option name="charting.axisY.scale">linear</option>
+     <option name="charting.axisY2.enabled">false</option>
+     <option name="charting.axisY2.scale">inherit</option>
+     <option name="charting.chart">line</option>
+     <option name="charting.chart.bubbleMaximumSize">50</option>
+     <option name="charting.chart.bubbleMinimumSize">10</option>
+     <option name="charting.chart.bubbleSizeBy">area</option>
+     <option name="charting.chart.nullValueMode">gaps</option>
+     <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+     <option name="charting.chart.stackMode">default</option>
+     <option name="charting.chart.style">shiny</option>
+     <option name="charting.drilldown">all</option>
+     <option name="charting.layout.splitSeries">0</option>
+     <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+     <option name="charting.legend.placement">bottom</option>
+     <option name="charting.axisTitleX.text">Time</option>
+     <option name="charting.axisTitleY.text">MB/s</option>
+   </chart>
+  </panel>
+ </row>
+</form>

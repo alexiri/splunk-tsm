@@ -1,0 +1,22 @@
+.dashboard-row .dashboard-panel .panel-body .splunk-single {
+ text-align: left;
+ min-height: 0px;
+}
+
+.dashboard-row .dashboard-panel .panel-element-row div.single {
+ clear: both;
+ width: 100% !important;
+}
+
+.dashboard-row .dashboard-panel .panel-head h3:empty {
+ display: none !important;
+}
+
+.single-value .single-result {
+ font-size: 16px !important;
+}
+
+.single-value {
+ margin: 5px !important;
+ margin-left: 20px !important;
+}

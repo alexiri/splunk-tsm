@@ -1,0 +1,78 @@
+<dashboard>
+ <label>DNS and E-groups status</label>
+
+ <row>
+  <panel>
+    <title>DNS Status</title>
+    <table id="dns_status">
+     <searchString>| dbquery "TSMMS" "SELECT SERIAL, UPDATED FROM DNS_ATTR"
+      | appendcols [| dbquery "TSMMS" "SELECT count(*) AS NODES_DNS FROM ZONE_BACKUP"]
+      | appendcols [search `lastdb("nodes")` | stats dc(NODE_NAME) AS NODES_TSMDB]
+      | eval "Correct?"=if('NODES_DNS'=='NODES_TSMDB', "yes", "no")
+      | eval "Last Update"=strftime(UPDATED, "%F %T")
+      | rename SERIAL AS "DNS Serial Number" NODES_DNS AS "Nodes in DNS" NODES_TSMDB AS "Nodes in TSMDB"
+      | table "DNS Serial Number" "Last Update" "Nodes in DNS" "Nodes in TSMDB" "Correct?"
+     </searchString>
+     <earliestTime>-7d</earliestTime>
+     <option name="drilldown">cell</option>
+     <drilldown>
+      <link field="Correct?">search?earliest=-24h@h&amp;q=| set diff [| dbquery "TSMMS" "SELECT NAME, ALIAS AS NODE_NAME FROM ZONE_BACKUP" | rename NAME AS tsmserver | fields tsmserver NODE_NAME] [search `lastdb("nodes")` | search REPL_MODE!=RECEIVE | sort LOCKED, -REG_TIME | stats first(tsmserver) AS tsmserver by NODE_NAME]</link>
+     </drilldown>
+    </table>
+  </panel>
+
+  <panel>
+    <title>E-group Status</title>
+    <table id="egroup_status">
+     <searchString>| inputlookup serverinfo
+      | search SERVER_STATUS!=retired SERVER_TYPE=user
+      | eval egroupname="it-service-backup-"+lower(TSMSERVER)
+      | append [| inputlookup serverinfo
+        | search SERVER_STATUS!=retired SERVER_TYPE=user
+        | stats count by BUILDING
+        | eval egroupname="it-service-backup-b"+BUILDING]
+      | checkegroups
+      | where contact!="it-service-backup-notify" AND contact!="tsm-admin" AND contact!="tsm.support"
+      | stats count AS egroup_count by egroupname
+      | append [search `lastdb("nodes")`
+        | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_TYPE SERVER_STATUS
+        | search SERVER_STATUS!=retired SERVER_TYPE=user
+        | eval CONTACT=lower(CONTACT)
+        | where CONTACT!="tsm-admin" AND CONTACT!="tsm.support"
+        | stats dc(CONTACT) AS tsmdb_count by tsmserver
+        | eval egroupname="it-service-backup-"+lower(tsmserver)
+        | fields egroupname tsmdb_count]
+      | append [search `lastdb("nodes")`
+        | lookup serverinfo TSMSERVER AS tsmserver
+        | search SERVER_STATUS!=retired SERVER_TYPE=user
+        | stats dc(tsmserver) AS tsmdb_count by BUILDING
+        | eval egroupname="it-service-backup-b"+BUILDING
+        | fields egroupname tsmdb_count]
+      | stats sum(*_count) AS *_count by egroupname
+      | eval "Correct?"=if('egroup_count'=='tsmdb_count', "yes", "no")
+      | rename egroupname AS "E-group" egroup_count AS "Members in e-group" tsmdb_count AS "Contacts in TSMDB"
+      | table "E-group" "Members in e-group" "Contacts in TSMDB" "Correct?"
+     </searchString>
+     <earliestTime>-7d</earliestTime>
+     <option name="count">35</option>
+    </table>
+  </panel>
+
+  <panel>
+    <title>SLS Data Status</title>
+    <table id="sls_status">
+     <searchString>| importutil https https://druid/s/sls-status.xml
+        | xmlkv
+        | eval timestamp=strftime(strptime(timestamp, "%FT%T"), "%F %T")
+        | stats first(timestamp) AS "Last sls-status update"
+        | appendcols [| importutil https https://druid/s/sls-accounting.xml
+            | xmlkv
+            | rename day AS "Last sls-accounting update"
+            | fields "Last sls-accounting update"]
+     </searchString>
+     <earliestTime>-24h</earliestTime>
+    </table>
+  </panel>
+ </row>
+
+</dashboard>
