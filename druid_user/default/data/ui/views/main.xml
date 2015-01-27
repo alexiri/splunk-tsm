@@ -61,7 +61,7 @@
           <ul>
             <li>See a <a href="Ordenalfabetix">list of all your nodes</a> and their backup status</li>
             <li>See each node's <a href="node_data">data consumption</a>, <a href="node_logs">log files</a>, etc.</li>
-            <li>Categorize your nodes <a href="node_config">into groups</a> in order to see agregated statistics</li>
+            <li>Categorize your nodes <a href="node_config">into groups</a> in order to see aggregated statistics</li>
             <li>See your <a href="total_data">total data consumption</a> and your <a href="daily_traffic">daily traffic</a></li>
           </ul>
         </p>
