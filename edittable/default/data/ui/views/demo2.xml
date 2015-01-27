@@ -1,0 +1,79 @@
+<form script="autodiscover.js,edittable.js" stylesheet="edittable.css">
+  <label>Editable Table demo 2</label>
+  <row>
+    <panel>
+      <title>Table</title>
+      <input type="dropdown" token="tsmserver" searchWhenChanged="true">
+        <label>TSM Server</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <search>
+          <query>|inputlookup serverinfo | search SERVER_TYPE=user SERVER_STATUS!=retire | dedup TSMSERVER | sort TSMSERVER</query>
+        </search>
+        <fieldForLabel>TSMSERVER</fieldForLabel>
+        <fieldForValue>TSMSERVER</fieldForValue>
+      </input>
+      <input type="dropdown" token="node" searchWhenChanged="true">
+        <label>Node</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <search>
+          <query>|inputlookup nodeinfo | where isnull(DEL_TIME) | search tsmserver="$tsmserver$" | dedup NODE_NAME | sort NODE_NAME</query>
+        </search>
+        <fieldForLabel>NODE_NAME</fieldForLabel>
+        <fieldForValue>NODE_NAME</fieldForValue>
+      </input>
+      <html>
+          <button class="edit_demo-add" data-TSMSERVER="$form.tsmserver$" data-NODE="$form.node$">Add NAP period</button>
+          $form.tsmserver$ - $form.node$
+      </html>
+      <table id="edit_demo">
+        <searchString>| inputlookup nodealerts
+         | search tsmserver="$tsmserver$" node="$node$"
+         | stats first(eval(if(type="start", round(starttime,0), NULL))) AS start_time first(eval(if(type="start", alert, NULL))) AS alert first(eval(if(type="end", round(starttime,0), NULL))) AS end_time first(eval(if(type="start", comment, NULL))) AS comment by napid,tsmserver,node
+         | sort node
+         | table tsmserver node napid start_time end_time alert comment</searchString>
+        <option name="drilldown">none</option>
+        <option name="count">30</option>
+        <option name="table.lookup">nodealerts</option>
+        <option name="table.allowadd">true</option>
+        <option name="table.addbutton.class">edit_demo-add</option>
+        <option name="table.allowdelete">true</option>
+        <option name="table.presearch">
+          <![CDATA[stats first(eval(if(type="start", round(starttime,0), NULL))) AS start_time first(eval(if(type="start", alert, NULL))) AS alert first(eval(if(type="end", round(starttime,0), NULL))) AS end_time first(eval(if(type="start", comment, NULL))) AS comment by napid,tsmserver,node
+         ]]>
+        </option>
+        <option name="table.postsearch">
+          <![CDATA[eval end_alert=if(alert="YES","NO","YES") | strcat start_time ":" alert ":start," end_time ":" end_alert ":end" fields | makemv delim="," fields | mvexpand fields | rex field=fields "(?<starttime>.+):(?<alert>.+):(?<type>.+)" | eval comment=if(type="end", "", comment) | table starttime tsmserver node napid type alert comment
+         ]]>
+        </option>
+        <option name="table.postaddsearch">
+          <![CDATA[appendcols override=t [|inputlookup nodealerts | appendcols [|stats count] | stats max(eval(coalesce(napid,0))) AS max | eval napid = max+1 | fields napid]
+         | foreach alert start_time end_time [eval <<FIELD>>=if(<<FIELD>>=="", null, <<FIELD>>)]
+         | appendcols [| inputlookup nodeinfo | search tsmserver="$tsmserver$" NODE_NAME="$node$" | eval alert=if(ALERTS_DEFAULT=="YES", "NO", "YES") | fields alert]
+         | appendcols [| stats count | setfields tsmserver="", node="", alert="NO" | eval start_time=round(relative_time(now(), "@d")) | eval end_time=round(relative_time(now(),"+30d@d")) | fields - count]
+         | foreach tsmserver node alert [eval <<FIELD>>=upper(<<FIELD>>)]
+         ]]>
+        </option>
+        <option name="table.field.0.fieldname">tsmserver</option>
+        <option name="table.field.0.readonly">true</option>
+        <option name="table.field.1.fieldname">node</option>
+        <option name="table.field.1.readonly">true</option>
+        <option name="table.field.2.fieldname">napid</option>
+        <option name="table.field.2.readonly">always</option>
+        <option name="table.field.3.fieldname">start_time</option>
+        <option name="table.field.3.type">datepicker</option>
+        <option name="table.field.3.datepicker.mindate">0</option>
+        <option name="table.field.4.fieldname">end_time</option>
+        <option name="table.field.4.type">datepicker</option>
+        <option name="table.field.5.fieldname">alert</option>
+        <option name="table.field.5.type">dropdown</option>
+        <option name="table.field.5.choice.0.label">No</option>
+        <option name="table.field.5.choice.0.value">NO</option>
+        <option name="table.field.5.choice.1.label">Yes</option>
+        <option name="table.field.5.choice.1.value">YES</option>
+        <option name="table.field.6.fieldname">comment</option>
+      </table>
+    </panel>
+  </row>
+</form>

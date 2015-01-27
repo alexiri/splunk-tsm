@@ -16,6 +16,7 @@ Here's a short description of what each component is:
 3. [druid_admin](druid_admin): Administrator dashboard
 4. [druid_user](druid_user): User's portal
 5. [druid_utils](druid_utils): common elements to the two previous Splunk apps.
+6. [edittable](edittable): half-baked Splunk app that allows for editable tables (used in [druid_admin](druid_admin) and [druid_user](druid_user)). Your mileage may vary.
 
 ## Requirements
 * Splunk version 6.2 or higher

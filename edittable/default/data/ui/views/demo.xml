@@ -1,0 +1,64 @@
+<form script="autodiscover.js,edittable.js" stylesheet="edittable.css">
+  <label>Editable Table demo</label>
+  <fieldset submitButton="false">
+    <input type="multiselect" token="field1">
+      <choice value="ba">ba</choice>
+      <choice value="aa">aa</choice>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Table</title>
+      <html>
+          <button class="edit_demo-add" data-TSMSERVER="$form.tsmserver$" data-NODE="$form.node$">Add TSM Server</button>
+          $form.tsmserver$ - $form.node$
+        </html>
+      <table id="edit_demo">
+        <searchString>| inputlookup serverinfo
+          | rename TSMSERVER AS "TSM Server" SERVER_VERSION AS Version BUILDING AS Building SERVER_STATUS AS Status SERVER_TYPE AS Type USAGE AS Usage COMMENT AS Comment DATE AS Date
+          | table "TSM Server" Version Type Building Status Usage Comment Date
+          | sort "TSM Server"</searchString>
+        <option name="drilldown">none</option>
+        <option name="count">30</option>
+        <option name="table.lookup">serverinfo</option>
+        <option name="table.allowadd">true</option>
+        <option name="table.addbutton.class">edit_demo-add</option>
+        <option name="table.allowdelete">true</option>
+        <option name="table.field.0.fieldname">TSMSERVER</option>
+        <option name="table.field.0.readonly">true</option>
+        <option name="table.field.1.fieldname">SERVER_VERSION</option>
+        <option name="table.field.1.readonly">true</option>
+        <option name="table.field.2.fieldname">SERVER_TYPE</option>
+        <option name="table.field.2.type">dropdown</option>
+        <option name="table.field.2.choice.0.label">User Server</option>
+        <option name="table.field.2.choice.0.value">user</option>
+        <option name="table.field.2.choice.1.label">Library Manager</option>
+        <option name="table.field.2.choice.1.value">library_manager</option>
+        <option name="table.field.3.fieldname">BUILDING</option>
+        <option name="table.field.3.type">dropdown</option>
+        <option name="table.field.3.choice.0.label">513</option>
+        <option name="table.field.3.choice.0.value">513</option>
+        <option name="table.field.3.choice.1.label">613</option>
+        <option name="table.field.3.choice.1.value">613</option>
+        <option name="table.field.3.choice.2.label"></option>
+        <option name="table.field.3.choice.2.value"></option>
+        <option name="table.field.4.fieldname">SERVER_STATUS</option>
+        <option name="table.field.4.choice.0.label">Production</option>
+        <option name="table.field.4.choice.0.value">production</option>
+        <option name="table.field.4.choice.1.label">Test</option>
+        <option name="table.field.4.choice.1.value">test</option>
+        <option name="table.field.4.choice.2.label">Retired</option>
+        <option name="table.field.4.choice.2.value">retire</option>
+        <option name="table.field.4.type">dropdown</option>
+        <option name="table.field.5.fieldname">USAGE</option>
+        <option name="table.field.6.fieldname">COMMENT</option>
+        <option name="table.field.7.fieldname">DATE</option>
+        <option name="table.field.7.type">datepicker</option>
+        <option name="table.field.7.datepicker.mindate">0</option>
+      </table>
+      <html>
+          <button class="edit_demo-add" data-TSMSERVER="$form.tsmserver$" data-NODE="$form.node$">Add TSM Server</button>
+        </html>
+    </panel>
+  </row>
+</form>
