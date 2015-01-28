@@ -1,4 +1,4 @@
-<form hideEdit="true">
+<form hideEdit="true" hideSplunkBar="true">
   <label>Node Data</label>
   <searchTemplate>
     <![CDATA[

@@ -1,4 +1,4 @@
-<form hideEdit="true" script="edittable:edittable.js" stylesheet="edittable:edittable.css">
+<form hideEdit="true" hideSplunkBar="true" script="edittable:edittable.js" stylesheet="edittable:edittable.css">
   <label>Node Editor</label>
   <description>This interface allows you to configure retirements, backup delays and groups for nodes.</description>
   <fieldset submitButton="false">

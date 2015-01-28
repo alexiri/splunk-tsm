@@ -1,4 +1,4 @@
-<dashboard hideEdit="true">
+<dashboard hideEdit="true" hideSplunkBar="true">
   <label>TSM User Portal</label>
   <search id="schedules">
     <query>| inputlookup nodeinfo

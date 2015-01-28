@@ -1,4 +1,4 @@
-<form hideEdit="true" script="nap_edit.js">
+<form hideEdit="true" hideSplunkBar="true" script="nap_edit.js">
   <label>Node Information</label>
   <searchTemplate>
     <![CDATA[
