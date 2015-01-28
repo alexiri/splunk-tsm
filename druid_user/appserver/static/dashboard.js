@@ -17,6 +17,16 @@ require([
                 $(this).addClass('active');
             }
         });
+
+        // Hack to allow opening links from the nav bar in a new window
+        $(".nav-item a").each(function(i, link) {
+            var href = $(link).attr("href");
+            if (href.indexOf("#newWindow") > 0) {
+                $(link).attr("target","_blank");
+                href = href.substring(0,href.indexOf("#newWindow"));
+                $(link).attr("href",href);
+            }
+        });
     });
 
     /* Modify sizes of cells in a page */
