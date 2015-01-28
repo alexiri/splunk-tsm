@@ -117,7 +117,7 @@
       <title>Split by User</title>
       <chart>
         <search base="template">
-          <query>stats count by fullname</query>
+          <query>stats count by fullname | sort -count</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -146,7 +146,7 @@
       <title>Split by Root</title>
       <chart>
         <search base="template">
-          <query>stats count by root</query>
+          <query>stats count by root | sort -count</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -175,7 +175,7 @@
       <title>Split by User Agent</title>
       <chart>
         <search base="template">
-          <query>stats count by useragent</query>
+          <query>stats count by useragent | sort -count</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -205,7 +205,7 @@
     <panel>
       <table>
         <search base="template">
-          <query>table _time user app dashboard uri_query root useragent</query>
+          <query>table _time user app dashboard uri_query root useragent | sort - _time</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
