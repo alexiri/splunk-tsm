@@ -126,6 +126,7 @@
         <option name="count">10</option>
         <option name="showPager">true</option>
         <option name="link.visible">false</option>
+        <option name="drilldown">none</option>
       </table>
     </panel>
   </row>
