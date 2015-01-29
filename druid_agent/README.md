@@ -7,3 +7,11 @@ In this directory you will find the python scripts responsible for gathering dat
 5. [subprocess32.py](subprocess32.py) is an external utility to spawn concurrent processes and gather their return codes. (no need to modify this)
 6. [table.py](table.py) contains the table class used by [server.py](server.py) to fetch and dump data corresponding to a single table of a single server. (no need to modify this)
 7. [Tsm.py](Tsm.py) is the TSM server interface, i.e. it carries out the actual querying of the TSM DB by using the admin console of TSM.
+
+The Druid Agent can be run from cron as follows:
+
+```
+*/5 * * * * /opt/druid_agent/main.py -f FIVELY &> /dev/null
+1 * * * * /opt/druid_agent/main.py -f HOURLY &> /dev/null
+1 8 * * * /opt/druid_agent/main.py -f DAILY &> /dev/null
+```

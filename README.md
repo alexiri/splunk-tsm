@@ -22,6 +22,8 @@ Here's a short description of what each component is:
 ## Requirements
 * Splunk version 6.2 or higher
 * IBM's Tivoli Storage Manager version 6.0 or higher
+
+The following components are required to be installed on the Splunk server:
 * Splunk Gantt Chart visualization (https://apps.splunk.com/app/1741/)
 * Splunk DB Connect (https://apps.splunk.com/app/958/)
 * python-requests
