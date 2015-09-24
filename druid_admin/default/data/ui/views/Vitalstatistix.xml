@@ -85,9 +85,8 @@
        <searchPostProcess><![CDATA[
          fields - count_alerts
          | foreach count_* [rename <<FIELD>> AS "<<MATCHSTR>>"]
-         | fields - recent_*
          | sort Host
-         | table "TSM Server" Host *
+         | table "TSM Server" Host lemon sysinfo tsm-accnt tsmdb tsmlogs
          | addcoltotals label="Totals" labelfield="TSM Server"
        ]]></searchPostProcess>
        <option name="drilldown">none</option>
