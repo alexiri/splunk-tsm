@@ -5,7 +5,9 @@
     <panel>
       <title>Library Capacity of TSMLIB0 in TB</title>
       <chart>
-        <searchString>| inputlookup tapevolumeinfo | search LIBRARY_NAME="TSMLIB0" | stats sum(EST_CAPACITY_MB) AS EST_CAPACITY_MB sum(USED_MB) AS USED_MB by LIBRARY_NAME | eval EST_CAPACITY_TB=EST_CAPACITY_MB/1024/1024 | eval USED_TB=round(USED_MB/1024/1024, 0) | eval seventyfive=EST_CAPACITY_TB*.75 | eval eightyfive=EST_CAPACITY_TB*.85 | eval ninetyfive=EST_CAPACITY_TB*.95 | gauge USED_TB 0 seventyfive eightyfive ninetyfive capacity_tb</searchString>
+        <search>
+          <query>| inputlookup tapevolumeinfo | search LIBRARY_NAME="TSMLIB0" | stats sum(EST_CAPACITY_MB) AS EST_CAPACITY_MB sum(USED_MB) AS USED_MB by LIBRARY_NAME | eval EST_CAPACITY_TB=EST_CAPACITY_MB/1024/1024 | eval USED_TB=round(USED_MB/1024/1024, 0) | eval seventyfive=EST_CAPACITY_TB*.75 | eval eightyfive=EST_CAPACITY_TB*.85 | eval ninetyfive=EST_CAPACITY_TB*.95 | gauge USED_TB 0 seventyfive eightyfive ninetyfive capacity_tb</query>
+        </search>
         <option name="charting.chart">fillerGauge</option>
         <option name="charting.chart.style">shiny</option>
       </chart>
@@ -15,18 +17,22 @@
       <title>Free Scratch Tapes</title>
       <single>
         <title>TSMLIB0</title>
-        <searchString>STATUS=Scratch LIBRARY_NAME="TSMLIB0" `lastdb("libvolumes")` | stats count by LIBRARY_NAME | rangemap field=count low=200-100000 elevated=100-200 severe=0-100 default=low</searchString>
-        <earliestTime>-24h</earliestTime>
-        <latestTime>now</latestTime>
+        <search>
+          <query>STATUS=Scratch LIBRARY_NAME="TSMLIB0" `lastdb("libvolumes")` | stats count by LIBRARY_NAME | rangemap field=count low=200-100000 elevated=100-200 severe=0-100 default=low</query>
+          <earliest>-24h</earliest>
+          <latest>now</latest>
+        </search>
         <option name="field">count</option>
         <option name="classField">range</option>
         <option name="underLabel">scratch tapes</option>
       </single>
       <single>
-        <title>IBMLIB2</title>
-        <searchString>STATUS=Scratch LIBRARY_NAME="IBMLIB2" `lastdb("libvolumes")` | stats count by LIBRARY_NAME | rangemap field=count low=200-100000 elevated=100-200 severe=0-100 default=low</searchString>
-        <earliestTime>-24h</earliestTime>
-        <latestTime>now</latestTime>
+        <title>TSMLIB2</title>
+        <search>
+          <query>STATUS=Scratch LIBRARY_NAME="TSMLIB2" `lastdb("libvolumes")` | stats count by LIBRARY_NAME | rangemap field=count low=200-100000 elevated=100-200 severe=0-100 default=low</query>
+          <earliest>-24h</earliest>
+          <latest>now</latest>
+        </search>
         <option name="field">count</option>
         <option name="classField">range</option>
         <option name="underLabel">scratch tapes</option>
@@ -34,9 +40,11 @@
     </panel>
 
     <panel>
-      <title>Library Capacity of IBMLIB2 in TB</title>
+      <title>Library Capacity of TSMLIB2 in TB</title>
       <chart>
-        <searchString>| inputlookup tapevolumeinfo | search LIBRARY_NAME="IBMLIB2" | stats sum(EST_CAPACITY_MB) AS EST_CAPACITY_MB sum(USED_MB) AS USED_MB by LIBRARY_NAME | eval EST_CAPACITY_TB=EST_CAPACITY_MB/1024/1024 | eval USED_TB=round(USED_MB/1024/1024, 0) | eval seventyfive=EST_CAPACITY_TB*.75 | eval eightyfive=EST_CAPACITY_TB*.85 | eval ninetyfive=EST_CAPACITY_TB*.95 | gauge USED_TB 0 seventyfive eightyfive ninetyfive capacity_tb</searchString>
+        <search>
+          <query>| inputlookup tapevolumeinfo | search LIBRARY_NAME="TSMLIB2" | stats sum(EST_CAPACITY_MB) AS EST_CAPACITY_MB sum(USED_MB) AS USED_MB by LIBRARY_NAME | eval EST_CAPACITY_TB=EST_CAPACITY_MB/1024/1024 | eval USED_TB=round(USED_MB/1024/1024, 0) | eval seventyfive=EST_CAPACITY_TB*.75 | eval eightyfive=EST_CAPACITY_TB*.85 | eval ninetyfive=EST_CAPACITY_TB*.95 | gauge USED_TB 0 seventyfive eightyfive ninetyfive capacity_tb</query>
+        </search>
         <option name="charting.chart">fillerGauge</option>
         <option name="charting.chart.style">shiny</option>
       </chart>
@@ -50,9 +58,11 @@
         <default>Last 30 days</default>
       </input>
       <chart>
-        <searchString>`tsmdb("libvolumes")` STATUS=Scratch LIBRARY_NAME=TSMLIB0 | timechart span=1h dc(VOLUME_NAME) AS Scratch</searchString>
-        <earliestTime>$time1.earliest$</earliestTime>
-        <latestTime>$time1.latest$</latestTime>
+        <search>
+          <query>`tsmdb("libvolumes")` STATUS=Scratch LIBRARY_NAME=TSMLIB0 | timechart span=1h dc(VOLUME_NAME) AS Scratch</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
         <option name="charting.chart">area</option>
         <option name="charting.chart.nullValueMode">connect</option>
         <option name="charting.drilldown">all</option>
@@ -62,21 +72,98 @@
       </chart>
     </panel>
     <panel>
-      <title>Free scratch tapes in IBMLIB2</title>
+      <title>Free scratch tapes in TSMLIB2</title>
       <input type="time" token="time2" searchWhenChanged="true">
         <label/>
         <default>Last 30 days</default>
       </input>
       <chart>
-        <searchString>`tsmdb("libvolumes")` STATUS=Scratch LIBRARY_NAME=IBMLIB2 | timechart span=1h dc(VOLUME_NAME) AS Scratch</searchString>
-        <earliestTime>$time2.earliest$</earliestTime>
-        <latestTime>$time2.latest$</latestTime>
+        <search>
+          <query>`tsmdb("libvolumes")` STATUS=Scratch LIBRARY_NAME=*LIB2 | timechart span=1h dc(VOLUME_NAME) AS Scratch</query>
+          <earliest>$time2.earliest$</earliest>
+          <latest>$time2.latest$</latest>
+        </search>
         <option name="charting.chart">area</option>
         <option name="charting.chart.nullValueMode">connect</option>
         <option name="charting.drilldown">all</option>
         <option name="charting.legend.placement">none</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisTitleY.text">Tapes</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Tape Evolution</title>
+      <input type="time" token="time3">
+        <label></label>
+        <default>
+          <earliest>-1y</earliest>
+          <latest>now</latest>
+        </default>
+      </input>
+      <chart>
+        <title>IBMLIB0</title>
+        <search>
+          <query>`tsmdb("libvolumes")` LIBRARY_NAME=*LIB0 date_hour=0 | timechart span=1d dc(VOLUME_NAME) by STATUS | fields _time Scratch Private</query>
+          <earliest>$time3.earliest$</earliest>
+          <latest>$time3.latest$</latest>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Tapes</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      </chart>
+
+      <chart>
+        <title>IBMLIB2</title>
+        <search>
+          <query>`tsmdb("libvolumes")` LIBRARY_NAME=*LIB2 date_hour=0 | timechart span=1d dc(VOLUME_NAME) by STATUS | fields _time Scratch Private</query>
+          <earliest>$time3.earliest$</earliest>
+          <latest>$time3.latest$</latest>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Tapes</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
       </chart>
     </panel>
   </row>

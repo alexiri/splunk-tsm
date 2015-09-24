@@ -16,9 +16,9 @@
       </table>
     </panel>
     <panel>
-      <title>Drive Status IBMLIB2</title>
+      <title>Drive Status TSMLIB2</title>
       <table id="drive_status_lib2">
-        <searchString>| `drive_status("IBMLIB2")`</searchString>
+        <searchString>| `drive_status("*LIB2")`</searchString>
         <earliestTime>-24h@h</earliestTime>
         <latestTime>now</latestTime>
         <option name="wrap">true</option>
@@ -51,13 +51,13 @@
       </chart>
     </panel>
     <panel>
-      <title>Drive Utilization IBMLIB2</title>
+      <title>Drive Utilization TSMLIB2</title>
       <input type="time" token="time2" searchWhenChanged="true">
         <label/>
         <default>Last 72 hours</default>
       </input>
       <chart>
-        <searchString>`tsmdb("drives")` ONLINE=YES VOLUME_NAME!="" LIBRARY_NAME=IBMLIB2 | bin span=5m _time | stats count by _time | timechart avg(count) minspan=5m</searchString>
+        <searchString>`tsmdb("drives")` ONLINE=YES VOLUME_NAME!="" LIBRARY_NAME=*LIB2 | bin span=5m _time | stats count by _time | timechart avg(count) minspan=5m</searchString>
         <earliestTime>$time2.earliest$</earliestTime>
         <latestTime>$time2.latest$</latestTime>
         <option name="charting.chart">column</option>

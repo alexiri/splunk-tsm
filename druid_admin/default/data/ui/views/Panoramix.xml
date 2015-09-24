@@ -80,11 +80,11 @@
       </drilldown>
     </single>
     <table id="table_drives_lib0">
-      <title>IBMLIB0 Offline Drives</title>
+      <title>TSMLIB0 Offline Drives</title>
       <searchString>LIBRARY_NAME="TSMLIB0" (ONLINE!="YES" OR DEVICE_TYPE!="3592") `lastdb("drives")`
      | appendpipe
          [ stats count
-         | eval DRIVE_NAME="All IBMLIB0 drives are ONLINE"
+         | eval DRIVE_NAME="All TSMLIB0 drives are ONLINE"
          | where count==0 ]
      | sort by DRIVE_NAME
      | table DRIVE_NAME, ONLINE, DEVICE_TYPE, DRIVE_STATE</searchString>
@@ -96,11 +96,11 @@
       </drilldown>
     </table>
     <table id="table_drives_lib2">
-      <title>IBMLIB2 Offline Drives</title>
-      <searchString>LIBRARY_NAME="IBMLIB2" AND (ONLINE!="YES" OR DEVICE_TYPE!="3592") `lastdb("drives")`
+      <title>TSMLIB2 Offline Drives</title>
+      <searchString>LIBRARY_NAME="*LIB2" AND (ONLINE!="YES" OR DEVICE_TYPE!="3592") `lastdb("drives")`
      | appendpipe
          [ stats count
-         | eval DRIVE_NAME="All IBMLIB2 drives are ONLINE"
+         | eval DRIVE_NAME="All TSMLIB2 drives are ONLINE"
          | where count==0 ]
      | sort by DRIVE_NAME
      | table DRIVE_NAME, ONLINE, DEVICE_TYPE, DRIVE_STATE</searchString>
@@ -112,28 +112,28 @@
       </drilldown>
     </table>
     <single>
-      <title>IBMLIB0 Scratch Tapes</title>
+      <title>TSMLIB0 Scratch Tapes</title>
       <searchString>STATUS=Scratch LIBRARY_NAME="TSMLIB0" `lastdb("libvolumes")`
      | stats count
      | rangemap field=count low=100-9999999 elevated=10-99 default=severe</searchString>
       <earliestTime>-24h</earliestTime>
       <option name="classField">range</option>
       <option name="beforeLabel">There are</option>
-      <option name="afterLabel">scratch tapes in IBMLIB0</option>
+      <option name="afterLabel">scratch tapes in TSMLIB0</option>
       <option name="drilldown">all</option>
       <drilldown>
           <link>tape_supply</link>
       </drilldown>
     </single>
     <single>
-      <title>IBMLIB2 Scratch Tapes</title>
-      <searchString>STATUS=Scratch LIBRARY_NAME="IBMLIB2" `lastdb("libvolumes")`
+      <title>TSMLIB2 Scratch Tapes</title>
+      <searchString>STATUS=Scratch LIBRARY_NAME="*LIB2" `lastdb("libvolumes")`
      | stats count
      | rangemap field=count low=100-9999999 elevated=10-99 default=severe</searchString>
       <earliestTime>-24h</earliestTime>
       <option name="classField">range</option>
       <option name="beforeLabel">There are</option>
-      <option name="afterLabel">scratch tapes in IBMLIB2</option>
+      <option name="afterLabel">scratch tapes in TSMLIB2</option>
       <option name="drilldown">all</option>
       <drilldown>
           <link>tape_supply</link>

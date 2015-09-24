@@ -116,7 +116,7 @@ require([
     /* Path Information in drive_debug */
     inlineRenderer('table_path', {
         'ONLINE'      : function(v) { return (v != 'YES')? ICONS['severe']: ''; },
-        'LIBRARY_NAME': function(v) { return (['TSMLIB0', 'IBMLIB2'].indexOf(v) == -1)? ICONS['severe']: ''; },
+        'LIBRARY_NAME': function(v) { return (['TSMLIB0', 'IBMLIB2', 'TSMLIB2'].indexOf(v) == -1)? ICONS['severe']: ''; },
         'DEVICE'      : function(v) { return (v.toLowerCase() != v)? ICONS['severe']: ''; },
     });
 

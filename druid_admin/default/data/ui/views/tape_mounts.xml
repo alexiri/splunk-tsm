@@ -47,13 +47,13 @@
 
  <row>
   <panel>
-   <title>Tape mounts IBMLIB2</title>
+   <title>Tape mounts TSMLIB2</title>
    <html>
      <div id="mounts-search-lib2"
          class="splunk-manager"
          data-require="splunkjs/mvc/searchmanager"
          data-options='{
-             "search": "tapelibrary=IBMLIB2 `gantt_mounts`",
+             "search": "tapelibrary=*LIB2 `gantt_mounts`",
              "earliest_time": { "type": "token_safe", "value": "$$time.earliest$$" },
              "latest_time": { "type": "token_safe", "value": "$$time.latest$$" },
              "cancelOnUnload": true,
@@ -70,7 +70,7 @@
             "durationField": "duration",
             "categoryLabel": "Tape Drive",
             "categoryField": "tapedrive",
-            "categorySearch": "|inputlookup driveinfo | search LIBRARY_NAME=IBMLIB2 | rename DRIVE_NAME AS tapedrive | fields tapedrive",
+            "categorySearch": "|inputlookup driveinfo | search LIBRARY_NAME=*LIB2 | rename DRIVE_NAME AS tapedrive | fields tapedrive",
             "seriesLabel": "TSM Server",
             "seriesField": "tsmserver",
             "highlightField": "tapevolume",
