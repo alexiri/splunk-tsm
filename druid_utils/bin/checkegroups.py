@@ -42,6 +42,25 @@ args = parser.parse_args(myargs)
 # check if sender can send and email to an egroup
 def check_member_email(egroupMember):
     # tsm-admin can send emails to any egroup
+    # but we need to report empty or blocked ones
+    if (egroupMember.Type == "DynamicEgroup") or (egroupMember.Type == "StaticEgroup"):
+        myegroup =  Egroup()
+        if myegroup.pull(egroupMember.Name):
+            # if e-group Privacy is Members or Administrators we get this:
+            # WARNING - SOAP Warning (WARNING): You don't have the privileges to see the members of egroup with ID: ...
+            # so there is no way to kow how many Members are in this egroup
+            # improvement request has been made to display how many members are in the egroup: RQF0475676
+            if (not "Members" in myegroup.egroup) and (myegroup.egroup.Privacy != "Members") and (myegroup.egroup.Privacy != "Administrators"):
+                # egroup with no members
+                return False
+            if myegroup.egroup.Status == "Blocked":
+                # egroup is blocked
+                return False
+            # in all the other cases we can email to this egroup
+            return True
+        # not found?
+        return False
+    # if not an egroup, we can email
     return True
 
 

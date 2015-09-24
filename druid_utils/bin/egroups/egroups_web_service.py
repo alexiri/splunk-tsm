@@ -4,6 +4,8 @@ import re
 import inspect
 import config
 import datetime
+import urllib2
+import string, random
 
 
 # Authentication
@@ -13,7 +15,11 @@ egroup_wsdl_url = ''
 # file for logged information
 egroups_logfile = "/var/log/druid/egroups.log"
 # warning if webservice takes more than warning_web_timeout to reply
-web_warning_timeout = 5
+web_warning_timeout = 10 # warn on response times longer than 10s
+# SOAP client timeout, before having another try maybe if something goes wrong
+SOAP_client_timeout = 60
+# Maximum number of times to try a request on web service before giving up >=1
+max_tries = 4
 
 # create logger for this module
 egroup_logger = logging.getLogger('egroup_management')
@@ -34,7 +40,11 @@ egroup_logger.addHandler(fh)
 client_logger.addHandler(fh)
 resolver_loggger.addHandler(fh)
 
+def id_generator(size=5, chars=string.ascii_uppercase + string.ascii_lowercase + string.digits):
+    return ''.join(random.SystemRandom().choice(chars) for _ in range(size))
 
+def total_seconds(td):
+    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10.0**6
 
 class EgroupsWebService(object):
 
@@ -44,7 +54,7 @@ class EgroupsWebService(object):
         if EgroupsWebService.__client is None:
             egroup_logger.debug("EgroupsWebService(): creating a new connection")
             try:
-                EgroupsWebService.__client = Client(egroup_wsdl_url, username=CFG['user'], password=CFG['password'])
+                EgroupsWebService.__client = Client(egroup_wsdl_url, username=CFG['user'], password=CFG['password'], timeout=SOAP_client_timeout)
             except Exception, e:
                 egroup_logger.error("Exception caught when trying to connect to the webservice using this URL: " + egroup_wsdl_url + " : " + str(e))
         else:
@@ -52,32 +62,64 @@ class EgroupsWebService(object):
         # to get some feedback about the available SOAP functions
         #egroup_logger.debug(str(self.__client))
 
-    def SOAPService(self, called_function, *args):
-        egroup_logger.debug("SOAPService(" + called_function + "): issuing request to webservice ")
-        for myarg in args:
-            egroup_logger.debug("SOAPService(" + called_function + "): arg " + str(myarg))
-        if self.__client is None:
-            egroup_logger.error("No connection established with the web service, cannot dispatch " + called_function + ". Please check previous service connection error, or make sure that a connection exists.")
-            return None
-        calling_time = datetime.datetime.today()
-        # some issues can happen here as well because it is the point where we are contacting the SOAP webservice...
-        try:
-            result = getattr(self.__client.service, called_function)(*args)
-        except Exception, e:
-            egroup_logger.error("Exception caught when calling (" + called_function + ") with the previous args: " + str(e))
-            return None
-        web_responsetime = (datetime.datetime.today() - calling_time).seconds
-        egroup_logger.debug("SOAPService(" + called_function + "): returning from webservice request: webservice response time was " + str(web_responsetime) + " seconds")
-        if (web_responsetime > web_warning_timeout):
-            egroup_logger.warning("SOAPService(" + called_function + "): webservice response time was " + str(web_responsetime) + " seconds > " + str(web_warning_timeout) + " seconds")
 
-        if "error" in result:
-            egroup_logger.error("SOAP Error (" + result.error.Code + "): " + result.error.Message)
+    def SOAPService(self, called_function, *args):
+        head = 'SOAPService function="%s" tid="%s" ' % (called_function, id_generator())
+        egroup_logger.debug(head + 'issuing request to webservice')
+
+        for myarg in args:
+            egroup_logger.debug(head + 'arg: %s' % myarg)
+
+        if self.__client is None:
+            egroup_logger.error(head + 'No connection established with the web service, cannot dispatch. Please check previous service connection error, or make sure that a connection exists.')
             return None
-        elif "warnings" in result:
-            for warning in result.warnings:
-                egroup_logger.warning("SOAP Warning (" + warning.Code + "): " + warning.Message)
+
+        # variables needed later
+        calling_time = stop_time = web_responsetime = 0
+        result = None
+        status = 'failure'
+        start_time = datetime.datetime.today()
+        for try_num in range(1, max_tries+1): # try max_tries times in case of timeout
+            # some issues can happen here as well because it is the point where we are contacting the SOAP webservice...
+            try:
+                calling_time = datetime.datetime.today()
+                result = getattr(self.__client.service, called_function)(*args)
+                stop_time = datetime.datetime.today()
+                web_responsetime = total_seconds((stop_time - calling_time))
+                status = 'success'
+                # there was no exception, therefore no reason to retry so just stop here
+                break
+            except urllib2.URLError, e:
+                stop_time = datetime.datetime.today()
+                web_responsetime = total_seconds((stop_time - calling_time))
+                # this is a timeout exception on SOAP service
+                egroup_logger.error(head + 'Timeout exception caught after %0.3f seconds of try %d: %s' % (web_responsetime, try_num, e))
+            except Exception, e:
+                stop_time = datetime.datetime.today()
+                web_responsetime = total_seconds((stop_time - calling_time))
+                egroup_logger.error(head + 'Fatal exception caught after %0.3f seconds of try %d: %s' % (web_responsetime, try_num, e))
+                break
+        else:
+            egroup_logger.error(head + 'Max number of retries reached, giving up.')
+
+        totaltime = total_seconds((stop_time - start_time))
+
+        if (web_responsetime > web_warning_timeout):
+            egroup_logger.warning(head + 'webservice response time was %0.3f seconds > %0.3f seconds' % (web_responsetime, web_warning_timeout))
+
+        if result:
+            if "error" in result:
+                egroup_logger.error(head + 'SOAP Error (%s): %s' % (result.error.Code, result.error.Message))
+                status = 'error'
+                result = None
+            elif "warnings" in result:
+                status = 'warning'
+                for warning in result.warnings:
+                    egroup_logger.warning(head + 'SOAP Warning (%s): %s' % (warning.Code, warning.Message))
+
+        egroup_logger.debug(head + 'call summary: total_time_secs="%0.3f" tries="%d" last_time_secs="%0.3f" status="%s"' % (totaltime, try_num, web_responsetime, status))
         return result
+
 
     def FindEgroupByName(self, egroupName):
         return self.SOAPService("FindEgroupByName", egroupName)
@@ -114,10 +156,11 @@ class Egroup(EgroupsWebService):
     def pull(self, egroupName):
         tempResult = self.FindEgroupByName(egroupName)
         self.egroup = None
-        if tempResult is not None:
-            self.egroup = self.FindEgroupByName(egroupName).result
+        if (tempResult is not None) and ("result" in tempResult) and ("Owner" in tempResult.result):
+            self.egroup = tempResult.result
         self.dirty = 0
         if self.egroup is None:
+            egroup_logger.warning("pull(" + egroupName + "): could not pull egroup from webservice")
             return False
         return True
 
@@ -218,7 +261,7 @@ class Egroup(EgroupsWebService):
         for email in emails:
             self.asyncAddEmailMember(email)
         # this False specify that users are added to existing ones
-        #  True would replace all the members  by provided list
+        # True would replace all the members by provided list
         return self.AddEgroupMembers(self.egroup.Name, False, self.egroup.Members)
 
 

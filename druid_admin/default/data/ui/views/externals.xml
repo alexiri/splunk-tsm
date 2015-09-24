@@ -24,19 +24,24 @@
   <panel>
     <title>E-group Status</title>
     <table id="egroup_status">
-     <searchString>| inputlookup serverinfo
-      | search SERVER_STATUS!=retired SERVER_TYPE=user
-      | eval egroupname="it-service-backup-"+lower(TSMSERVER)
-      | append [| inputlookup serverinfo
-        | search SERVER_STATUS!=retired SERVER_TYPE=user
-        | stats count by BUILDING
-        | eval egroupname="it-service-backup-b"+BUILDING]
+     <searchString>`lastdb("nodes")`
+      | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW BUILDING SERVER_TYPE SERVER_STATUS
+      | search SERVER_STATUS=production SERVER_TYPE=user
+      | dedup tsmserver
+      | eval egroupname="it-service-backup-"+lower(tsmserver)
+      | fields egroupname
+      | append [search `lastdb("nodes")`
+        | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW BUILDING SERVER_TYPE SERVER_STATUS
+        | search SERVER_STATUS=production SERVER_TYPE=user
+        | dedup BUILDING
+        | eval egroupname="it-service-backup-b"+BUILDING
+        | fields egroupname]
       | checkegroups
       | where contact!="it-service-backup-notify" AND contact!="tsm-admin" AND contact!="tsm.support"
       | stats count AS egroup_count by egroupname
       | append [search `lastdb("nodes")`
         | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_TYPE SERVER_STATUS
-        | search SERVER_STATUS!=retired SERVER_TYPE=user
+        | search SERVER_STATUS=production SERVER_TYPE=user
         | eval CONTACT=lower(CONTACT)
         | where CONTACT!="tsm-admin" AND CONTACT!="tsm.support"
         | stats dc(CONTACT) AS tsmdb_count by tsmserver
@@ -44,7 +49,7 @@
         | fields egroupname tsmdb_count]
       | append [search `lastdb("nodes")`
         | lookup serverinfo TSMSERVER AS tsmserver
-        | search SERVER_STATUS!=retired SERVER_TYPE=user
+        | search SERVER_STATUS=production SERVER_TYPE=user
         | stats dc(tsmserver) AS tsmdb_count by BUILDING
         | eval egroupname="it-service-backup-b"+BUILDING
         | fields egroupname tsmdb_count]
