@@ -15,8 +15,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import config
 CFG = config.getConfig()
 
-sys.path.insert(0, '/usr/lib/python2.6/site-packages')
-import requests, json
 
 alert_logfile = "/var/log/druid/alerts.log"
 FEED_RSS      = "/var/www/html/s/alert_rss.xml"
@@ -96,10 +94,11 @@ if feed_rss:
     fcntl.flock(feed_rss, fcntl.LOCK_UN)
     feed_rss.close()
 
-# Push through Pushbullet
-API_KEY = ''
-
 if alert.getSeverityTag() in ['CRITICAL', 'HIGH']:
+    # Push through Pushbullet
+    API_KEY = ''
+
+    sys.path.insert(0, '/usr/lib/python2.6/site-packages')
     import pushybullet as pb
     api = pb.PushBullet(API_KEY)
 
@@ -110,47 +109,6 @@ if alert.getSeverityTag() in ['CRITICAL', 'HIGH']:
     # Send it off!
     for c in api.contacts():
         c.push(link)
-
-
-# Post to Slack
-SLACK_URL  = 'https://you.slack.com/services/hooks/incoming-webhook?token=yiJdX2TmXWed27Snp8ZhG4AI'
-SLACK_CHAN = '#backup'
-SLACK_BOT  = 'Druid'
-SLACK_ICON = ':druid:'
-
-# Disable posting to Slack, nobody uses it :(
-if False and alert.getSeverityTag() in ['CRITICAL', 'HIGH']:
-    try:
-        if alert.events[0]['_raw']:
-            payload = { 'channel': SLACK_CHAN,
-                        'username': SLACK_BOT,
-                        'icon_emoji': SLACK_ICON,
-                      }
-
-            headers = {}
-            payload['text'] = '*%s* %s:\n' % (alert.getSeverityTag(), alert.numEventsStr())
-
-            payload['attachments'] = []
-            text = alert.getEventsAsText()
-            text = re.sub('</p>See event <a href="(.*)">(.*)</a> and .*</a><br/>', r'See event <\1|\2>.', text)
-            text = text.replace('&nbsp;', '')
-            text = text.replace('<br/>', '')
-
-            text = re.split('<p>', text)
-
-            for t in text:
-                if t != '\n':
-                    payload['attachments'].append({ 'fallback': '',
-                                                    'color': 'danger',
-                                                    'fields': [{ 'title': '',
-                                                                 'value': t,
-                                                                 'short': False,
-                                                    }],
-                                                  })
-
-            r = requests.post(SLACK_URL, data=json.dumps(payload), verify=False)
-    except KeyError:
-        pass
 
 
 if CFG['email_admins']:
