@@ -131,6 +131,7 @@
         | rename SCHEDULE_NAME AS "Schedule Name" status AS "Last Run" status_time AS "Last Run Time" last_completed AS "Last Successful Run" schedule_desc AS "Schedule Description" next_run AS "Next Scheduled Execution"
         | table "Schedule Name" "Schedule Description" "Last Run" "Last Run Time" "Last Successful Run" "Next Scheduled Execution"</searchString>
         <option name="link.visible">false</option>
+        <option name="drilldown">none</option>
       </table>
     </panel>
     <panel>
@@ -144,6 +145,7 @@
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
         <option name="link.visible">false</option>
+        <option name="drilldown">none</option>
       </table>
     </panel>
     <panel>
