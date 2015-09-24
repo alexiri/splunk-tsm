@@ -6,6 +6,8 @@ Created on Jul 2, 2012
 
 import config
 import os
+import logging
+import operator
 
 class Table(object):
 
@@ -18,9 +20,17 @@ class Table(object):
         '''
         Constructor
         '''
+        self.log = logging.getLogger('Table')
         self._TABLE = table.upper()
-        self._TSM_FIELDS = config.columns[self._TABLE]['columns']
-        self._VERSION = int(config.columns[self._TABLE]['version'])
+
+        data = config.columns[self._TABLE]['data']
+        versions = sorted(data, key=operator.itemgetter('version'), reverse=True)
+
+        for v in versions:
+            if config.version >= int(v['version']):
+                self._TSM_FIELDS = v['columns']
+                self._VERSION = int(v['version'])
+                break
 
     def getSQLQuery(self):
         if not self._TSM_FIELDS:
@@ -39,11 +49,11 @@ class Table(object):
                     data = [str(x) if x else '' for x in row]
                     data.insert(0, timedate_string)
                     self._DATA.append(data)
-                print '[%s] Read %d records from %s' % (server.name, len(self._DATA), self._TABLE)
+                self.log.info('[%s] Read %d records from %s (v%d)' % (server.name, len(self._DATA), self._TABLE, self._VERSION))
             else:
-                print '[%s] Skipping %s' % (server.name, self._TABLE)
+                self.log.warning('[%s] Skipping %s (v%d)' % (server.name, self._TABLE, self._VERSION))
         else:
-            print '[%s] Skipping %s' % (server.name, self._TABLE)
+            self.log.warning('[%s] Skipping %s (v%d)' % (server.name, self._TABLE, self._VERSION))
 
     def dumpToFile(self, outputdir, server_name):
         filePath = '%s/%s' % (outputdir, server_name)

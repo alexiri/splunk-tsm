@@ -10,10 +10,25 @@ from datetime import datetime
 from math import floor
 import getopt, sys
 import config
+import logging
 
-def usage(exec_name):
+
+logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+rootLogger = logging.getLogger()
+rootLogger.setLevel(logging.INFO)
+
+fileHandler = logging.FileHandler('%s/druid_agent.log' % config.tsmdb)
+fileHandler.setFormatter(logFormatter)
+rootLogger.addHandler(fileHandler)
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+rootLogger.addHandler(consoleHandler)
+
+
+def usage():
     print "USAGE:"
     print sys.argv[0] + " [-s server_name] [-f frequency] [-t table_name(s)] [-o outputdir]"
+    print
     print "Please specify a server using the -s option. To select which tables to dump, you can either use the -f option specifying the frequency (ALL, DAILY, HOURLY, FIVELY), XOR use the -t option along with the name of the table (or tables, as a comma separated list) you would like to dump."
 
 def main():
@@ -45,7 +60,7 @@ def main():
             assert False, "unhandled option"
 
     if servername == '' or (frequency == '' and not table_names):
-        usage(sys.argv[0])
+        usage()
         sys.exit()
 
     # round the date to 5 minutes and forget about any better resolution

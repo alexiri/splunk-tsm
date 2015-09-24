@@ -7,6 +7,7 @@ Created on Jul 2, 2012
 from Tsm import Tsm
 from table import Table
 import config
+import logging
 
 class Server(object):
 
@@ -16,6 +17,7 @@ class Server(object):
         self.name = name.upper()
         self.outputdir = outputdir
         self.timedate_string = timedate_string
+        self.log = logging.getLogger('Server')
         if table_names:
             for t in table_names:
                 self._TABLES.append(Table(t))
@@ -32,9 +34,7 @@ class Server(object):
         elif _SERVER.ret == 11:
             return []
         else:
-            print '[%s] Error reading data' % self.name
-            for l in _SERVER.output:
-                print '[%s]    %s' % (self.name, l)
+            self.log.error('[%s] Error reading data: %s' % (self.name, ' '.join(_SERVER.output)))
             return None
 
     def readData(self):
