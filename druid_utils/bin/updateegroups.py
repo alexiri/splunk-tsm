@@ -119,6 +119,9 @@ def addMembersToEgroup (egroupName, members):
 csvEgroups = {}
 csvBuildings = {}
 updateegroups_logger.debug("Reading input data from Splunk")
+if len(splunkresults) == 0:
+    updateegroups_logger.error("No Splunk result to read, exiting")
+    sys.exit(1)
 for result in splunkresults:
     myEgroupName = result[args.tsmserverfield].lower()
     myContactName = result[args.contactfield].lower()
