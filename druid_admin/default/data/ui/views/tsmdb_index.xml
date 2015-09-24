@@ -19,6 +19,7 @@
                     <li><b>`tsmdb("&lt;name&gt;")` tsmserver="&lt;tsmserver&gt;"</b>: search for all data from that table for one server only</li>
                     <li><b>`lastdb("&lt;name&gt;")`</b>: search for only the last data from that table</li>
                     <li><b>`lastdb("&lt;name&gt;", "&lt;tsmserver&gt;")`</b>: search for only the last data from that table for one server only</li>
+                    <li><b>`lastdb_time("&lt;name&gt;", &lt;time&gt;")`</b>: search for only the last data from that table during that time</li>
                 </ul>
             </p>
         </html>
