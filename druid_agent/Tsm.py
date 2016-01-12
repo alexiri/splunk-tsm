@@ -59,13 +59,14 @@ class Tsm(object):
     """
 
     __dsmadmc  = '/usr/bin/dsmadmc'
+    __timeout  = '/usr/bin/timeout'
 
     __username = None
     __password = None
     __pwfile   = None
 
 
-    def __init__(self, server, command = None, username = None, password = None, pwfile = None):
+    def __init__(self, server, command = None, username = None, password = None, pwfile = None, timeout='2m'):
         """Define a new server object.
         If you specify a command as well, the command will be executed immediately.
         """
@@ -87,6 +88,7 @@ class Tsm(object):
 
         self.server     = server.upper()
         self.command    = command
+        self.timeout    = timeout
 
         if command:
             self.run()
@@ -122,6 +124,10 @@ class Tsm(object):
             tmppath = '/tmp/'
 
         cmd = []
+        cmd.append(self.__timeout)
+        cmd.append('-s')
+        cmd.append('9')
+        cmd.append(self.timeout)
         cmd.append(self.__dsmadmc)
         cmd.append('-id=%s' % self.__username)
         cmd.append('-pa=%s' % self.__password)

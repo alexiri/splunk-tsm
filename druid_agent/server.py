@@ -33,9 +33,12 @@ class Server(object):
             return _SERVER.output
         elif _SERVER.ret == 11:
             return []
+        elif _SERVER.ret == 124:
+            self.log.error('[%s] Timeout while reading data' % self.name)
         else:
-            self.log.error('[%s] Error reading data: %s' % (self.name, ' '.join(_SERVER.output)))
-            return None
+            self.log.error('[%s] Error %d reading data: %s' % (self.name, _SERVER.ret, ' '.join(_SERVER.output)))
+
+        return None
 
     def readData(self):
         for table in self._TABLES:
