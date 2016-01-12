@@ -78,7 +78,7 @@
       <label></label>
       <default>index=*</default>
       <choice value="dashboard!=Panoramix">Exclude Panoramix</choice>
-      <choice value="user!=alex">Exclude Alex</choice>
+      <choice value="user!=airibarr">Exclude Alex</choice>
     </input>
   </fieldset>
   <row>
@@ -143,10 +143,10 @@
       </chart>
     </panel>
     <panel>
-      <title>Split by Root</title>
+      <title>Split by Contact</title>
       <chart>
         <search base="template">
-          <query>stats count by root | sort -count</query>
+          <query>stats count by contact | sort -count</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -172,10 +172,10 @@
       </chart>
     </panel>
     <panel>
-      <title>Split by User Agent</title>
+      <title>Split by User Department/Group</title>
       <chart>
         <search base="template">
-          <query>stats count by useragent | sort -count</query>
+          <query>eval dept=if(contact_dept!="", mvindex(contact_dept,0) . if(contact_group!="", "-" . mvindex(contact_group,0), ""), "others") | stats count by dept | sort -count</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -219,7 +219,7 @@
       <title>Latest lookup table edits</title>
       <table>
         <search>
-          <query>index=_audit user!="splunk-system-user" search="*inputlookup *outputlookup *" NOT THISONEDUMBASS | table _time user search | sort - _time</query>
+          <query>index=_audit user!="splunk-system-user" search="*inputlookup *outputlookup *" NOT THISONEDUMBASS NOT dmc_build | table _time user search | sort - _time</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
         </search>

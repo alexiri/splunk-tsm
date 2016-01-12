@@ -3,6 +3,8 @@
   <searchTemplate>
     <![CDATA[
     index=tsm-accnt
+    | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_TYPE SERVER_STATUS
+    | search SERVER_TYPE=user SERVER_STATUS!=test
     | lookup nodeinfo tsmserver NODE_NAME AS node OUTPUTNEW CONTACT
     | `contact_deptgroup(CONTACT)`
     | search $department$ $group$ $contact$

@@ -1,0 +1,109 @@
+<form>
+  <label>Node Support Status</label>
+  <search id="global">
+    <query>| inputlookup nodeinfo
+      | where isnull(DEL_TIME)
+      | search CONTACT="$contact$" tsmserver="$server$"
+      | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_VERSION SERVER_TYPE SERVER_STATUS
+      | search SERVER_TYPE=user SERVER_STATUS=production
+      | `client_support_status`
+      | search SUPPORTED="$supported$"
+    </query>
+  </search>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="supported" searchWhenChanged="true">
+      <label>Support Status</label>
+      <search>
+        <query>| inputlookup nodeinfo
+          | where isnull(DEL_TIME)
+          | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_VERSION SERVER_TYPE SERVER_STATUS
+          | search SERVER_TYPE=user SERVER_STATUS=production
+          | `client_support_status`
+          | dedup SUPPORTED
+        </query>
+      </search>
+      <fieldForLabel>SUPPORTED</fieldForLabel>
+      <fieldForValue>SUPPORTED</fieldForValue>
+      <choice value="*">All</choice>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="contact" searchWhenChanged="true">
+      <label>Contact</label>
+      <choice value="*">All</choice>
+      <search>
+        <query>| inputlookup nodeinfo
+          | where isnull(DEL_TIME)
+          | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_VERSION SERVER_TYPE SERVER_STATUS
+          | search SERVER_TYPE=user SERVER_STATUS=production
+          | dedup CONTACT
+        </query>
+      </search>
+      <fieldForLabel>CONTACT</fieldForLabel>
+      <fieldForValue>CONTACT</fieldForValue>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="server" searchWhenChanged="true">
+      <label>TSM Server</label>
+      <choice value="*">All</choice>
+      <search>
+        <query>| inputlookup nodeinfo
+          | where isnull(DEL_TIME)
+          | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_VERSION SERVER_TYPE SERVER_STATUS
+          | search SERVER_TYPE=user SERVER_STATUS=production
+          | dedup tsmserver
+        </query>
+      </search>
+      <fieldForLabel>tsmserver</fieldForLabel>
+      <fieldForValue>tsmserver</fieldForValue>
+      <default>*</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Description</title>
+      <html>
+       <p>The following is a list of all the nodes registered in the TSM service and their support status.</p>
+       <p>This status depends on the version of the TSM client and of the server. Old clients are not supported with the very latest servers.
+          If a TSM client is unsupported, it needs to be upgraded to the latest version.</p>
+       <p><b>Nodes that are unsupported are at risk and require action on the owner's part!</b></p>
+      </html>
+    </panel>
+    <panel>
+      <title>Support status statistics</title>
+      <chart>
+        <search base="global">
+          <query>stats count by SUPPORTED</query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.showPercent">true</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="link.visible">true</option>
+        <option name="charting.drilldown">all</option>
+        <drilldown>
+          <set token="form.supported">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>List of nodes</title>
+      <table>
+        <search base="global">
+          <query>sort SUPPORTED NODE_NAME
+            | rename tsmserver AS "TSM Server" NODE_NAME AS Node VERSION AS "Node Version" SERVER_VERSION AS "Server Version" CONTACT AS Contact SUPPORTED AS "Supported?"
+            | table "TSM Server" "Server Version" Node "Node Version" "Supported?" Contact
+          </query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="count">30</option>
+        <option name="link.visible">true</option>
+        <option name="drilldown">row</option>
+        <drilldown>
+          <link>node_data?form.tsmserver=$row.TSM Server$&amp;form.NODE_NAME=$row.Node$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>

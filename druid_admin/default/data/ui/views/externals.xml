@@ -66,11 +66,11 @@
   <panel>
     <title>SLS Data Status</title>
     <table id="sls_status">
-     <searchString>| importutil https https://druid/s/sls-status.xml
+     <searchString>| importutil https https://druid.cern.ch/static/sls-status.xml
         | xmlkv
         | eval timestamp=strftime(strptime(timestamp, "%FT%T"), "%F %T")
         | stats first(timestamp) AS "Last sls-status update"
-        | appendcols [| importutil https https://druid/s/sls-accounting.xml
+        | appendcols [| importutil https https://druid.cern.ch/static/sls-accounting.xml
             | xmlkv
             | rename day AS "Last sls-accounting update"
             | fields "Last sls-accounting update"]

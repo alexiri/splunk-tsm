@@ -44,7 +44,7 @@
     <panel>
       <title>Client logs</title>
       <html>
-        Please note that this interface <b>may not show the full client logs</b>, you should always review the local client logs on your system. Please consult the <a href="troubleshooting" target="_blank">troubleshooting guide</a> for more information about the log files and where you can find them.
+        Please note that this interface <b>may not show the full client logs</b>, you should always review the local client logs on your system. Please consult the <a href="https://information-technology.web.cern.ch/book/cern-backup-and-restore-service-user-guide/troubleshooting" target="_blank">troubleshooting guide</a> for more information about the log files and where you can find them.
       </html>
       <event>
         <search base="logs">

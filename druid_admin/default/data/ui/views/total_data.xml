@@ -1,24 +1,26 @@
 <form>
   <label>Total Data</label>
-  <searchTemplate>
-    <![CDATA[
+  <search id="base">
+    <query><![CDATA[
     `daily_occupancy_stats_macro`
+    | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_TYPE SERVER_STATUS
+    | search SERVER_TYPE=user SERVER_STATUS!=test
     | search $department$ $group$ $contact$
     | eventstats dc(contact_dept) AS depts dc(contact_group) AS groups
     | eval joiner=case(depts>4 OR groups>10, contact_dept, depts>1, contact_dept+"-"+contact_group, depts>0 AND groups>1, contact_group, groups>0, CONTACT)
     | stats sum(reporting_mb) AS reporting_mb sum(num_files) AS num_files by _time,type,joiner
     | eval reporting_mb=reporting_mb / case("$unit$"=="Megabytes", 1, "$unit$"=="Gigabytes", 1024, "$unit$"=="Terabytes", 1024*1024, "$unit$"=="Petabytes", 1024*1024*1024)
     | eval type=case(type="Bkup", "Backup", type="Arch", "Archive", type!="", type)
-  ]]>
-  </searchTemplate>
-  <earliestTime>$time.earliest$</earliestTime>
-  <latestTime>$time.latest$</latestTime>
+    ]]></query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
   <fieldset submitButton="false">
     <input type="time" token="time" searchWhenChanged="true">
       <label/>
       <default>
-        <earliestTime>-30d@d</earliestTime>
-        <latestTime>now</latestTime>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
       </default>
     </input>
     <input type="dropdown" token="unit" searchWhenChanged="true">
@@ -67,37 +69,37 @@
     <panel>
       <title>Total Data</title>
       <single>
-        <searchPostProcess>where type="Backup"
+        <search base="base">
+          <query>where type="Backup"
             | append [| stats count | eval _time=0 | eval type="Backup" | eval reporting_mb=0 | fields - count]
             | stats sum(reporting_mb) AS reporting_mb by _time
             | stats latest(reporting_mb) AS reporting_mb
             | eval reporting_mb=tostring(reporting_mb, "commas")
-        </searchPostProcess>
-        <earliestTime>$time.earliest$</earliestTime>
-        <latestTime>$time.latest$</latestTime>
+          </query>
+        </search>
         <option name="underLabel">Backup</option>
         <option name="afterLabel">$unit$</option>
       </single>
       <single>
-        <searchPostProcess>where type="Archive"
+        <search base="base">
+          <query>where type="Archive"
             | append [| stats count | eval _time=0 | eval type="Archive" | eval reporting_mb=0 | fields - count]
             | stats sum(reporting_mb) AS reporting_mb by _time
             | stats latest(reporting_mb) AS reporting_mb
             | eval reporting_mb=tostring(reporting_mb, "commas")
-        </searchPostProcess>
-        <earliestTime>$time.earliest$</earliestTime>
-        <latestTime>$time.latest$</latestTime>
+          </query>
+        </search>
         <option name="underLabel">Archive</option>
         <option name="afterLabel">$unit$</option>
       </single>
       <single>
-        <searchPostProcess>append [| stats count | eval _time=0 | eval type="Archive" | eval reporting_mb=0 | fields - count]
+        <search base="base">
+          <query>append [| stats count | eval _time=0 | eval type="Archive" | eval reporting_mb=0 | fields - count]
             | stats sum(reporting_mb) AS reporting_mb by _time
             | stats latest(reporting_mb) AS reporting_mb
             | eval reporting_mb=tostring(reporting_mb, "commas")
-        </searchPostProcess>
-        <earliestTime>$time.earliest$</earliestTime>
-        <latestTime>$time.latest$</latestTime>
+          </query>
+        </search>
         <option name="underLabel">Total</option>
         <option name="afterLabel">$unit$</option>
       </single>
@@ -105,35 +107,35 @@
     <panel>
       <title>Number of Files</title>
       <single>
-        <searchPostProcess>where type="Backup"
+        <search base="base">
+          <query>where type="Backup"
             | append [| stats count | eval _time=0 | eval type="Backup" | eval num_files=0 | fields - count]
             | stats sum(num_files) AS num_files by _time
             | stats latest(num_files) AS num_files
             | eval num_files=tostring(num_files, "commas")
-        </searchPostProcess>
-        <earliestTime>$time.earliest$</earliestTime>
-        <latestTime>$time.latest$</latestTime>
+          </query>
+        </search>
         <option name="underLabel">Backup</option>
       </single>
       <single>
-        <searchPostProcess>where type="Archive"
+        <search base="base">
+          <query>where type="Archive"
             | append [| stats count | eval _time=0 | eval type="Archive" | eval num_files=0 | fields - count]
             | stats sum(num_files) AS num_files by _time
             | stats latest(num_files) AS num_files
             | eval num_files=tostring(num_files, "commas")
-        </searchPostProcess>
-        <earliestTime>$time.earliest$</earliestTime>
-        <latestTime>$time.latest$</latestTime>
+          </query>
+        </search>
         <option name="underLabel">Archive</option>
       </single>
       <single>
-        <searchPostProcess>append [| stats count | eval _time=0 | eval type="Archive" | eval num_files=0 | fields - count]
+        <search base="base">
+          <query>append [| stats count | eval _time=0 | eval type="Archive" | eval num_files=0 | fields - count]
             | stats sum(num_files) AS num_files by _time
             | stats latest(num_files) AS num_files
             | eval num_files=tostring(num_files, "commas")
-        </searchPostProcess>
-        <earliestTime>$time.earliest$</earliestTime>
-        <latestTime>$time.latest$</latestTime>
+          </query>
+        </search>
         <option name="underLabel">Total</option>
       </single>
     </panel>
@@ -142,7 +144,9 @@
     <panel>
       <title>Total Data</title>
       <chart>
-        <searchPostProcess>timechart span=1d sum(reporting_mb) AS reporting_mb by type</searchPostProcess>
+        <search base="base">
+          <query>timechart span=1d sum(reporting_mb) AS reporting_mb by type</query>
+        </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -168,9 +172,13 @@
     <panel>
       <title>Breakdown</title>
       <chart>
-        <searchPostProcess>stats latest(reporting_mb) AS reporting_mb by joiner
+        <search base="base">
+          <query>stats sum(reporting_mb) AS reporting_mb by _time,joiner
+            | stats latest(reporting_mb) AS reporting_mb by joiner
             | rename joiner AS "Dept/Group/Contact"
-        </searchPostProcess>
+            | sort reporting_mb
+          </query>
+        </search>
         <option name="charting.chart">pie</option>
         <option name="charting.chart.nullValueMode">gaps</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
@@ -185,14 +193,16 @@
     <panel>
       <title>Projected Growth</title>
       <chart>
-        <searchPostProcess><![CDATA[
+        <search base="base">
+          <query><![CDATA[
             timechart span=1d sum(reporting_mb) AS "Total Data"
             | predict "Total Data" algorithm=LLT future_timespan=366
             | eval "prediction(Total Data)"=if('prediction(Total Data)'<0, null, 'prediction(Total Data)')
             | eval "lower95(prediction(Total Data))"=if('lower95(prediction(Total Data))'<0, null, 'lower95(prediction(Total Data))')
             | eval "upper95(prediction(Total Data))"=if('upper95(prediction(Total Data))'<0, null, 'upper95(prediction(Total Data))')
             | search "Total Data"!=0 OR "upper95(prediction(Total Data))"!=0
-        ]]></searchPostProcess>
+          ]]></query>
+        </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -220,9 +230,9 @@
     <panel>
       <title>Number of Files</title>
       <chart>
-        <searchPostProcess>timechart span=1d sum(num_files) AS num_files by type</searchPostProcess>
-        <earliestTime>$time.earliest$</earliestTime>
-        <latestTime>$time.latest$</latestTime>
+        <search base="base">
+          <query>timechart span=1d sum(num_files) AS num_files by type</query>
+        </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
         <option name="charting.axisTitleX.visibility">visible</option>

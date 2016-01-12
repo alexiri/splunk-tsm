@@ -1,0 +1,90 @@
+<form>
+  <label>Expirations</label>
+  <search id="global">
+    <query><![CDATA[
+      index=tsmlogs (tsmcode=ANR0167I OR tsmcode=ANR0812I) tsmserver!=tsmlib*
+      | rex "for (?<time>\d+) minutes"
+      | rex "processed (?<nodes>\d+) nodes, examined (?<examined>\d+) objects, deleting (?<del_backup>\d+) backup objects, (?<del_archive>\d+) archive objects, (?<dbvols>\d+) DB backup volumes, and (?<recovery>\d+) recovery plan files. (?<retries>\d+) objects were retried and (?<errors>\d+) errors"
+      | transaction tsmserver,process
+    ]]></query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <fieldset submitButton="false">
+    <input type="time" token="time">
+      <label></label>
+      <default>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Elapsed time</title>
+      <chart>
+        <search base="global">
+          <query>timechart span=1h limit=40 sum(time) by tsmserver | eval limit=420</query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.chart.overlayFields">limit</option>
+        <option name="charting.axisTitleY.text">Minutes</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Examined Objects</title>
+      <chart>
+        <search base="global">
+          <query>timechart span=1h limit=40 sum(examined) by tsmserver</query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.chart.overlayFields">limit</option>
+        <option name="charting.axisTitleY.text">Objects</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Deleted Objects</title>
+      <chart>
+        <search base="global">
+          <query>eval deleted=del_backup+del_archive
+              | timechart span=1h limit=40 sum(deleted) by tsmserver
+          </query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.chart.overlayFields">limit</option>
+        <option name="charting.axisTitleY.text">Objects</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Expiration Processes</title>
+      <table>
+        <search base="global">
+          <query>eval deleted=del_backup+del_archive
+            | table _time tsmserver process time nodes examined del_backup del_archive deleted
+          </query>
+        </search>
+      </table>
+    </panel>
+  </row>
+</form>

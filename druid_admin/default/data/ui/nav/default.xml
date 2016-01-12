@@ -4,6 +4,8 @@
         <view name="Ordenalfabetix" />
         <divider />
 
+        <view name="client_versions" />
+
         <collection label="Node Information">
             <view name="node_data" />
             <view name="node_traffic" />
@@ -20,6 +22,7 @@
         <divider />
         <view name="server_sizes" />
         <view name="migration_status" />
+        <view name="expirations" />
         <view name="network" />
         <divider />
         <view name="server_config" />
