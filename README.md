@@ -33,4 +33,4 @@ The following components are required to be installed on the Splunk server:
 * pushybullet (for [Pushbullet](https://www.pushbullet.com/) integration)
 
 ## Are you using this?
-If you're using this stuff or any part of it, I would love to hear about it! Drop me an email at <Alex.Iribarren@gmail.com> and let me knos what you like, what you don't like, etc.
+If you're using this stuff or any part of it, I would love to hear about it! Drop me an email at <Alex.Iribarren@gmail.com> and let me know what you like, what you don't like, etc.
