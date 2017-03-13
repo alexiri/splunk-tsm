@@ -1,0 +1,70 @@
+<dashboard>
+  <label>Node Support Status</label>
+  <search id="global">
+    <query>| inputlookup nodeinfo
+      | where isnull(DEL_TIME)
+      | `filter_contacts`
+      | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_VERSION SERVER_TYPE SERVER_STATUS
+      | search SERVER_TYPE=user SERVER_STATUS=production
+      | `client_support_status`
+    </query>
+  </search>
+  <row>
+    <panel>
+      <title>Description</title>
+      <html>
+       <p>The following is a list of all the nodes registered in the TSM service that you're responsible for and their support status.</p>
+       <p>This status depends on the version of the TSM client and of the server. Old clients are not supported with the very latest servers.
+          If your TSM client is unsupported, you will need to upgrade it to the latest version. If your server is puppet-managed, this should
+          be handled automatically for you.
+       </p>
+       <p><b>Nodes that are unsupported are at risk and require action on your part!</b></p>
+       <div data-set-token="show_search" data-value="*"></div>
+      </html>
+    </panel>
+    <panel>
+      <title>Support status statistics</title>
+      <chart>
+        <search base="global">
+          <query>stats count by SUPPORTED</query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.showPercent">true</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="link.visible">false</option>
+        <option name="charting.drilldown">all</option>
+        <drilldown>
+          <set token="show">$click.value$</set>
+          <set token="show_search">SUPPORTED="$click.value$"</set>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>List of nodes</title>
+      <html depends="$show$">
+        <p>Showing only <b>$show$</b> nodes:
+          <a href="#" class="btn-pill" data-unset-token="show" data-set-token="show_search" data-value="*">Show all nodes</a>
+        </p>
+      </html>
+      <table>
+        <search base="global">
+          <query>sort SUPPORTED NODE_NAME
+            | search $show_search$
+            | rename tsmserver AS "TSM Server" NODE_NAME AS Node VERSION AS "Node Version" SERVER_VERSION AS "Server Version" SUPPORTED AS "Supported?"
+            | table "TSM Server" "Server Version" Node "Node Version" "Supported?"
+          </query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="count">30</option>
+        <option name="link.visible">false</option>
+        <option name="drilldown">row</option>
+        <drilldown>
+          <link>node_data?form.tsmserver=$row.TSM Server$&amp;form.NODE_NAME=$row.Node$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</dashboard>

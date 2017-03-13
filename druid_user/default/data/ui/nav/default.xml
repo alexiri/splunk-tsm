@@ -11,6 +11,8 @@
 
     <view name="node_config" />
 
+    <view name="client_versions" />
+
     <view name="total_data" />
     <view name="daily_traffic" />
 

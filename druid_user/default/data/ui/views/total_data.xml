@@ -3,7 +3,6 @@
   <searchTemplate>
     <![CDATA[
     `daily_occupancy_stats_macro`
-    | lookup nodeinfo tsmserver NODE_NAME AS node output USER_GROUP USER_SUBGROUP
     | `filter_contacts`
     | fillnull value="" USER_GROUP USER_SUBGROUP
     | search $contact$ $group$ $subgroup$
