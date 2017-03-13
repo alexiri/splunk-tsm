@@ -1,0 +1,26 @@
+{
+  "name": "edittable",
+  "version": "2.0.0",
+  "description": "Visualization app template. Put a description here.",
+  "main": "visualization.js",
+  "scripts": {
+    "build": "node ./node_modules/webpack/bin/webpack.js",
+    "devbuild": "node ./node_modules/webpack/bin/webpack.js --progress",
+    "watch": "node ./node_modules/webpack/bin/webpack.js -d --watch --progress"
+  },
+  "author": "Alex Iribarren",
+  "license": "LGPL-3.0",
+  "devDependencies": {
+    "webpack": "^1.12.6"
+  },
+  "dependencies": {
+    "css-loader": "^0.25.0",
+    "extract-text-webpack-plugin": "^1.0.1",
+    "file-loader": "^0.9.0",
+    "jquery": "^2.2.0",
+    "jquery-validation": "^1.15.1",
+    "jquery.appendgrid": "^1.6.2",
+    "style-loader": "^0.13.1",
+    "underscore": "^1.8.3"
+  }
+}

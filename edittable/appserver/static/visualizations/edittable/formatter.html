@@ -1,0 +1,53 @@
+<form class="splunk-formatter-section" section-label="Lookup configuration">
+    <splunk-control-group label="Lookup table">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.lookup"></splunk-text-input>
+    </splunk-control-group>
+
+    <splunk-control-group label="Presearch">
+        <splunk-text-area name="{{VIZ_NAMESPACE}}.presearch"></splunk-text-area>
+    </splunk-control-group>
+
+    <splunk-control-group label="Postsearch">
+        <splunk-text-area name="{{VIZ_NAMESPACE}}.postsearch"></splunk-text-area>
+    </splunk-control-group>
+
+    <splunk-control-group label="Postsearch add">
+        <splunk-text-area name="{{VIZ_NAMESPACE}}.postaddsearch"></splunk-text-area>
+    </splunk-control-group>
+
+</form>
+
+<form class="splunk-formatter-section" section-label="Cell configuration">
+    <splunk-control-group label="Cell configuration" help="JSON format">
+        <splunk-text-area name="{{VIZ_NAMESPACE}}.cellConfig" value="[]"></splunk-text-area>
+    </splunk-control-group>
+
+</form>
+
+<form class="splunk-formatter-section" section-label="General">
+    <splunk-control-group label="Show row numbers">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.rowNumbers" value="false">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+
+    <splunk-control-group label="Allow Add">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.allowAdd" value="false">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+
+    <splunk-control-group label="Add button class">
+        <splunk-text-area name="{{VIZ_NAMESPACE}}.addButtonClass"></splunk-text-area>
+    </splunk-control-group>
+
+    <splunk-control-group label="Allow Delete">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.allowDelete" value="false">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+
+</form>

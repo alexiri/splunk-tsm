@@ -1,0 +1,13 @@
+{
+  "name": "edittable",
+  "version": "2.0.0",
+  "scripts": {
+    "list_viz": "node ./node_modules/splunk_viz_tasks list_app_viz",
+    "build_viz": "node ./node_modules/splunk_viz_tasks build_app_viz"
+  },
+  "author": "Alex Iribarren",
+  "license": "LGPL",
+  "devDependencies": {
+    "splunk_viz_tasks": "https://github.com/magnew/splunk_viz_tasks.git"
+  }
+}

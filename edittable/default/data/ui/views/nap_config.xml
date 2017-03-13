@@ -1,0 +1,106 @@
+<form>
+  <label>Node Alert Editor</label>
+  <description>This interface allows you to configure no-alert periods for nodes.</description>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="tsmserver" searchWhenChanged="true">
+      <label>TSM Server</label>
+      <search>
+        <query>| inputlookup nodeinfo | where isnull(DEL_TIME) | search NODE_NAME=$node$ CONTACT=$contact$ | dedup tsmserver | sort tsmserver</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>tsmserver</fieldForLabel>
+      <fieldForValue>tsmserver</fieldForValue>
+    </input>
+    <input type="dropdown" token="node" searchWhenChanged="true">
+      <label>Node Name</label>
+      <search>
+        <query>| inputlookup nodeinfo | where isnull(DEL_TIME) | search tsmserver=$tsmserver$ CONTACT=$contact$ | dedup NODE_NAME | sort NODE_NAME</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>NODE_NAME</fieldForLabel>
+      <fieldForValue>NODE_NAME</fieldForValue>
+    </input>
+    <input type="dropdown" token="contact" searchWhenChanged="true">
+      <label>Contact</label>
+      <search>
+        <query>| inputlookup nodeinfo | where isnull(DEL_TIME) | search tsmserver=$tsmserver$ NODE_NAME=$node$ | dedup CONTACT | sort CONTACT</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>CONTACT</fieldForLabel>
+      <fieldForValue>CONTACT</fieldForValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <html>
+          <button class="nap-add" data-tsmserver="$form.tsmserver$" data-node="$form.node$">Add NAP period</button>
+      </html>
+      <viz type="edittable.edittable">
+        <search>
+          <query>| inputlookup nodealerts
+         | lookup nodeinfo tsmserver NODE_NAME AS node OUTPUTNEW CONTACT DEL_TIME
+         | where isnull(DEL_TIME)
+         | fillnull value="" CONTACT
+         | search tsmserver="$tsmserver$" node="$node$" CONTACT="$contact$"
+         | stats first(CONTACT) AS CONTACT first(eval(if(type="start", round(starttime,0), NULL))) AS start_time first(eval(if(type="start", alert, NULL))) AS alert first(eval(if(type="end", round(starttime,0), NULL))) AS end_time first(eval(if(type="start", comment, NULL))) AS comment by napid,tsmserver,node
+         | sort tsmserver node napid
+         | rename tsmserver AS "TSM Server" node AS Node CONTACT AS Contact napid AS "NAP ID" start_time AS "Start Date" end_time AS "End Date" alert AS "Alert State" comment AS Comment
+         | table "TSM Server" Node Contact "NAP ID" "Start Date" "End Date" "Alert State" Comment</query>
+        </search>
+
+        <option name="drilldown">none</option>
+        <option name="count">25</option>
+
+        <option name="edittable.edittable.rowNumbers">true</option>
+        <option name="edittable.edittable.lookup">nodealerts</option>
+        <option name="edittable.edittable.allowAdd">true</option>
+        <option name="edittable.edittable.addButtonClass">nap-add</option>
+        <option name="edittable.edittable.allowDelete">true</option>
+        <option name="edittable.edittable.presearch">
+          <![CDATA[lookup nodeinfo tsmserver NODE_NAME AS node OUTPUTNEW CONTACT
+            | stats first(CONTACT) AS contact first(eval(if(type="start", round(starttime,0), NULL))) AS start_time first(eval(if(type="start", alert, NULL))) AS alert first(eval(if(type="end", round(starttime,0), NULL))) AS end_time first(eval(if(type="start", comment, NULL))) AS comment by napid,tsmserver,node
+         ]]>
+        </option>
+        <option name="edittable.edittable.postsearch">
+          <![CDATA[eval end_alert=if(alert="YES","NO","YES")
+            | strcat start_time ":" alert ":start," end_time ":" end_alert ":end" fields
+            | makemv delim="," fields
+            | mvexpand fields
+            | rex field=fields "(?<starttime>.+):(?<alert>.+):(?<type>.+)"
+            | eval comment=if(type="end", "", comment)
+            | table starttime tsmserver node napid type alert comment
+         ]]>
+        </option>
+        <option name="edittable.edittable.postaddsearch">
+          <![CDATA[appendcols override=t [|inputlookup nodealerts | appendcols [|stats count] | stats max(eval(coalesce(napid,0))) AS max | eval napid = max+1 | fields napid]
+         | foreach alert start_time end_time [eval <<FIELD>>=if(<<FIELD>>=="", null, <<FIELD>>)]
+         | appendcols [| inputlookup nodeinfo | search tsmserver="$tsmserver$" NODE_NAME="$node$" | eval alert=if(ALERTS_DEFAULT=="YES", "NO", "YES") | fields alert]
+         | appendcols [| stats count | setfields tsmserver="", node="", alert="NO" | eval start_time=round(relative_time(now(), "@d")) | eval end_time=round(relative_time(now(),"+30d@d")) | fields - count]
+         | foreach tsmserver node alert [eval <<FIELD>>=upper(<<FIELD>>)]
+         | fields - contact
+         ]]>
+        </option>
+        <option name="edittable.edittable.cellConfig">[
+        { "fieldname": "tsmserver", "readonly": true, "required": true},
+        { "fieldname": "node", "readonly": true, "required": true},
+        { "fieldname": "contact", "readonly": true },
+        { "fieldname": "napid", "readonly": true, "numeric": { "min": 0 } },
+        { "fieldname": "start_time", "required": true, "datepicker": { "max": "end_time" } },
+        { "fieldname": "end_time", "required": true, "datepicker": { "min": "start_time" } },
+        { "fieldname": "alert", "required": true, "dropdown": [
+                { "label": "No", "value": "NO" },
+                { "label": "Yes", "value": "YES" }
+        	]
+        },
+        { "fieldname": "comment", "css": { "width": "300px" } }
+        ]</option>
+      </viz>
+      <html>
+          <button class="nap-add" data-tsmserver="$form.tsmserver$" data-node="$form.node$">Add NAP period</button>
+      </html>
+    </panel>
+  </row>
+</form>
