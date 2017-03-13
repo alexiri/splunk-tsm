@@ -3,11 +3,12 @@
   <search id="base">
     <query><![CDATA[
     `daily_occupancy_stats_macro`
+    | fillnull value="" USER_GROUP USER_SUBGROUP
     | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_TYPE SERVER_STATUS
     | search SERVER_TYPE=user SERVER_STATUS!=test
-    | search $department$ $group$ $contact$
-    | eventstats dc(contact_dept) AS depts dc(contact_group) AS groups
-    | eval joiner=case(depts>4 OR groups>10, contact_dept, depts>1, contact_dept+"-"+contact_group, depts>0 AND groups>1, contact_group, groups>0, CONTACT)
+    | search $department$ $group$ $contact$ $user_group$ $user_subgroup$
+    | eventstats dc(contact_dept) AS depts dc(contact_group) AS groups dc(USER_GROUP) AS user_groups dc(CONTACT) AS contacts
+    | eval joiner=case(depts>4 OR groups>10, contact_dept, depts>1, contact_dept+"-"+contact_group, depts>0 AND groups>1, contact_group, contacts>1, CONTACT, user_groups>1, USER_GROUP, user_groups>0, USER_SUBGROUP)
     | stats sum(reporting_mb) AS reporting_mb sum(num_files) AS num_files by _time,type,joiner
     | eval reporting_mb=reporting_mb / case("$unit$"=="Megabytes", 1, "$unit$"=="Gigabytes", 1024, "$unit$"=="Terabytes", 1024*1024, "$unit$"=="Petabytes", 1024*1024*1024)
     | eval type=case(type="Bkup", "Backup", type="Arch", "Archive", type!="", type)
@@ -64,6 +65,28 @@
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
+    <input type="multiselect" token="user_group" searchWhenChanged="true">
+      <label>User Group</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch fieldForLabel="USER_GROUP" fieldForValue="USER_GROUP">| inputlookup nodeinfo | where isnull(DEL_TIME) | `contact_deptgroup("CONTACT")` | search $department$ $group$ $contact$ | dedup USER_GROUP</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>USER_GROUP="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="multiselect" token="user_subgroup" searchWhenChanged="true">
+      <label>User Subgroup</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <populatingSearch fieldForLabel="USER_SUBGROUP" fieldForValue="USER_SUBGROUP">| inputlookup nodeinfo | where isnull(DEL_TIME) | `contact_deptgroup("CONTACT")` | search $department$ $group$ $contact$ $user_group$ | dedup USER_SUBGROUP</populatingSearch>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <valuePrefix>USER_SUBGROUP="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
   </fieldset>
   <row>
     <panel>
@@ -77,8 +100,7 @@
             | eval reporting_mb=tostring(reporting_mb, "commas")
           </query>
         </search>
-        <option name="underLabel">Backup</option>
-        <option name="afterLabel">$unit$</option>
+        <option name="underLabel">$unit$ Backup</option>
       </single>
       <single>
         <search base="base">
@@ -89,8 +111,7 @@
             | eval reporting_mb=tostring(reporting_mb, "commas")
           </query>
         </search>
-        <option name="underLabel">Archive</option>
-        <option name="afterLabel">$unit$</option>
+        <option name="underLabel">$unit$ Archive</option>
       </single>
       <single>
         <search base="base">
@@ -100,7 +121,21 @@
             | eval reporting_mb=tostring(reporting_mb, "commas")
           </query>
         </search>
-        <option name="underLabel">Total</option>
+        <option name="underLabel">$unit$ Total</option>
+      </single>
+      <single>
+        <search>
+          <query>[search POOLTYPE=PRIMARY `lastdb("stgpools")`
+              | lookup serverinfo TSMSERVER AS tsmserver OUTPUTNEW SERVER_TYPE SERVER_STATUS
+              | search SERVER_TYPE=user SERVER_STATUS!=test
+              | fields tsmserver STGPOOL_NAME]
+            `lastdb("occupancy")`
+            | stats sum(REPORTING_MB) AS reporting_mb
+            | eval reporting_mb=reporting_mb / case("$unit$"=="Megabytes", 1, "$unit$"=="Gigabytes", 1024, "$unit$"=="Terabytes", 1024*1024, "$unit$"=="Petabytes", 1024*1024*1024)
+            | eval reporting_mb=tostring(reporting_mb, "commas")
+          </query>
+        </search>
+        <option name="underLabel">License Estimation</option>
         <option name="afterLabel">$unit$</option>
       </single>
     </panel>

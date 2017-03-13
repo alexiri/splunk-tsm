@@ -1,47 +1,35 @@
-<dashboard script="edittable:edittable.js" stylesheet="edittable:edittable.css">
+<dashboard>
   <label>Server Editor</label>
   <description>This interface allows you to configure the building, production stated, etc. of a server.</description>
   <row>
     <panel>
       <title></title>
-      <table id="serverinfo_edit">
-        <searchString>| inputlookup serverinfo
+      <viz type="edittable.edittable">
+        <search>
+          <query>| inputlookup serverinfo
           | rename TSMSERVER AS "TSM Server" SERVER_VERSION AS Version BUILDING AS Building SERVER_STATUS AS Status SERVER_TYPE AS Type USAGE AS Usage COMMENT AS Comment
           | table "TSM Server" Version Type Building Status Usage Comment
           | sort "TSM Server"
-        </searchString>
-        <option name="drilldown">none</option>
-        <option name="count">30</option>
-        <option name="table.lookup">serverinfo</option>
-        <option name="table.field.0.fieldname">TSMSERVER</option>
-        <option name="table.field.0.readonly">true</option>
-        <option name="table.field.1.fieldname">SERVER_VERSION</option>
-        <option name="table.field.1.readonly">true</option>
-        <option name="table.field.2.fieldname">SERVER_TYPE</option>
-        <option name="table.field.2.type">dropdown</option>
-        <option name="table.field.2.choice.0.label">User Server</option>
-        <option name="table.field.2.choice.0.value">user</option>
-        <option name="table.field.2.choice.1.label">Library Manager</option>
-        <option name="table.field.2.choice.1.value">library_manager</option>
-        <option name="table.field.3.fieldname">BUILDING</option>
-        <option name="table.field.3.type">dropdown</option>
-        <option name="table.field.3.choice.0.label">513</option>
-        <option name="table.field.3.choice.0.value">513</option>
-        <option name="table.field.3.choice.1.label">613</option>
-        <option name="table.field.3.choice.1.value">613</option>
-        <option name="table.field.3.choice.2.label"></option>
-        <option name="table.field.3.choice.2.value"></option>
-        <option name="table.field.4.fieldname">SERVER_STATUS</option>
-        <option name="table.field.4.choice.0.label">Production</option>
-        <option name="table.field.4.choice.0.value">production</option>
-        <option name="table.field.4.choice.1.label">Test</option>
-        <option name="table.field.4.choice.1.value">test</option>
-        <option name="table.field.4.choice.2.label">Retired</option>
-        <option name="table.field.4.choice.2.value">retire</option>
-        <option name="table.field.4.type">dropdown</option>
-        <option name="table.field.5.fieldname">USAGE</option>
-        <option name="table.field.6.fieldname">COMMENT</option>
-      </table>
+        </query>
+        </search>
+        <option name="edittable.edittable.lookup">serverinfo</option>
+        <option name="edittable.edittable.cellConfig">[
+        { "fieldname": "TSMSERVER", "readonly": true},
+        { "fieldname": "SERVER_VERSION", "readonly": true},
+        { "fieldname": "SERVER_TYPE", "dropdown": [
+            { "label": "User Server", "value": "user" },
+            { "label": "Library Manager", "value": "library_manager" }
+        ]},
+        { "fieldname": "BUILDING", "dropdown": [ "513", "613", "" ] },
+        { "fieldname": "SERVER_STATUS", "dropdown": [
+            { "label": "Production", "value": "production" },
+            { "label": "Test", "value": "test" },
+            { "label": "Retired", "value": "retire" }
+        ]},
+        { "fieldname": "USAGE" },
+        { "fieldname": "COMMENT", "css": { "width": "300px" } }
+        ]</option>
+      </viz>
     </panel>
   </row>
 </dashboard>

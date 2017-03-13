@@ -2,7 +2,7 @@
   <label>Client logs</label>
   <search id="logs">
     <query>
-      index=tsmlogs tsmcode=ane* tsmserver=$tsmserver$ node=$NODE_NAME$
+      index=tsmlogs (tsmcode=ane* OR tsmcode=ANR0488W) tsmserver=$tsmserver$ node=$NODE_NAME$
       | transaction session
     </query>
     <earliest>$time.earliest$</earliest>

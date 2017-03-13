@@ -2,8 +2,12 @@
   <label>Oracle Restores</label>
   <searchTemplate>
     <![CDATA[
-	index=tsmlogs tsmserver=TSM615 (tsmcode=ANR8337I OR tsmcode=ANR8468I OR tsmcode=ANR0510I OR tsmcode=ANR0514I OR tsmcode=ANE4991I) NOT process=* NOT diskvolume=*
-	| rex "backup piece (?<filename>[/\w\_\-\.]+\w)" | rex "Total bytes (sent|received): (?<bytes>\d+). Total processing time: (?<hours>\d{2}):(?<mins>\d{2}):(?<secs>\d{2})." | rex "Total processing time: (?<time_str>[\d:]+)." | eval time=hours*60*60+mins*60+secs
+	index=tsmlogs tsmserver=$tsmserver$ (tsmcode=ANR8337I OR tsmcode=ANR8468I OR tsmcode=ANR0510I OR tsmcode=ANR0514I OR tsmcode=ANE4991I) NOT process=* NOT diskvolume=*
+	| rex "backup piece (?<filename>[/\w\_\-\.]+\w)"
+    | rex "Total bytes (sent|received): (?<bytes>\d+)."
+    | rex "Total processing time: (?<hours>\d{2}):(?<mins>\d{2}):(?<secs>\d{2})."
+    | rex "Total processing time: (?<time_str>[\d:]+)."
+    | eval time=hours*60*60+mins*60+secs
     | eval mbps=bytes/1024/1024/time
     | eval mbytes=round(bytes/1024/1024, 2)
     | eval restore_time=if(searchmatch("ANU2527I"), _time, NULL)
@@ -38,7 +42,7 @@
     <panel>
       <title>Files backed up and restored</title>
       <chart>
-        <searchString>index=tsmlogs tsmserver=TSM615 tsmcode=ANE4991I (ANU2527I OR ANU2526I) | stats sum(eval(if(searchmatch("ANU2527I"), 1, 0))) AS Restore sum(eval(if(searchmatch("ANU2526I"), 1, 0))) AS Backup | transpose</searchString>
+        <searchString>index=tsmlogs tsmserver=$tsmserver$ tsmcode=ANE4991I (ANU2527I OR ANU2526I) | stats sum(eval(if(searchmatch("ANU2527I"), 1, 0))) AS Restore sum(eval(if(searchmatch("ANU2526I"), 1, 0))) AS Backup | transpose</searchString>
         <earliestTime>$time.earliest$</earliestTime>
         <latestTime>$time.latest$</latestTime>
         <option name="charting.chart">pie</option>
@@ -214,7 +218,7 @@
     <panel>
       <title>Backup Speeds</title>
       <chart>
-        <searchString>index=tsmlogs tsmserver=tsm615 tsmcode=ANE4991I ANU2526I           | rex "Total bytes (sent|received): (?&lt;bytes&gt;\d+). Total processing time: (?&lt;hours&gt;\d{2}):(?&lt;mins&gt;\d{2}):(?&lt;secs&gt;\d{2})."           | eval time=hours*60*60+mins*60+secs     	  | eval mbps=bytes/1024/1024/time 	      | timechart span=1h avg(mbps) by node</searchString>
+        <searchString>index=tsmlogs tsmserver=$tsmserver$ tsmcode=ANE4991I ANU2526I           | rex "Total bytes (sent|received): (?&lt;bytes&gt;\d+). Total processing time: (?&lt;hours&gt;\d{2}):(?&lt;mins&gt;\d{2}):(?&lt;secs&gt;\d{2})."           | eval time=hours*60*60+mins*60+secs     	  | eval mbps=bytes/1024/1024/time 	      | timechart span=1h avg(mbps) by node</searchString>
         <earliestTime>$time.earliest$</earliestTime>
         <latestTime>$time.latest$</latestTime>
         <option name="charting.chart">area</option>
@@ -240,7 +244,7 @@
     <panel>
       <title>Restore Speeds</title>
       <chart>
-        <searchString>index=tsmlogs tsmserver=tsm615 tsmcode=ANE4991I ANU2527I           | rex "Total bytes (sent|received): (?&lt;bytes&gt;\d+). Total processing time: (?&lt;hours&gt;\d{2}):(?&lt;mins&gt;\d{2}):(?&lt;secs&gt;\d{2})."           | eval time=hours*60*60+mins*60+secs     	  | eval mbps=bytes/1024/1024/time 	      | timechart span=1h avg(mbps) by node</searchString>
+        <searchString>index=tsmlogs tsmserver=$tsmserver$ tsmcode=ANE4991I ANU2527I           | rex "Total bytes (sent|received): (?&lt;bytes&gt;\d+). Total processing time: (?&lt;hours&gt;\d{2}):(?&lt;mins&gt;\d{2}):(?&lt;secs&gt;\d{2})."           | eval time=hours*60*60+mins*60+secs     	  | eval mbps=bytes/1024/1024/time 	      | timechart span=1h avg(mbps) by node</searchString>
         <earliestTime>$time.earliest$</earliestTime>
         <latestTime>$time.latest$</latestTime>
         <option name="charting.chart">area</option>
